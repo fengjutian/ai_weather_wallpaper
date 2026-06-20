@@ -1,0 +1,16 @@
+name: common_ui
+description: Shared UI widgets, themes, and animations for the AI Weather Wallpaper app — glass buttons, weather cards, wallpaper dialogs, scene transitions, and a dark theme.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0

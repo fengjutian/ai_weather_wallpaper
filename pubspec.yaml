@@ -1,0 +1,13 @@
+name: ai_weather_wallpaper
+description: AI Weather Wallpaper — A dynamic desktop wallpaper application for Windows
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+# Workspace root — this is a monorepo managed by Melos or pub get per package.
+# Individual packages have their own pubspec.yaml files.
+
+dev_dependencies:
+  melos: ^6.0.0

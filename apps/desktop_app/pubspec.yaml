@@ -1,0 +1,38 @@
+name: desktop_app
+description: AI Weather Wallpaper — Flutter Desktop Application
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # Internal packages
+  weather_core:
+    path: ../../packages/weather_core
+  wallpaper_core:
+    path: ../../packages/wallpaper_core
+  desktop_bridge:
+    path: ../../packages/desktop_bridge
+  audio_engine:
+    path: ../../packages/audio_engine
+  local_storage:
+    path: ../../packages/local_storage
+  common_ui:
+    path: ../../packages/common_ui
+  ai_engine:
+    path: ../../packages/ai_engine
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/

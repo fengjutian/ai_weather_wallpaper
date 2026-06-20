@@ -1,0 +1,21 @@
+# Melos Monorepo Configuration
+#
+# Melos orchestrates the monorepo — running pub get, tests, and
+# linting across all packages with a single command.
+
+name: ai_weather_wallpaper
+
+packages:
+  - apps/**
+  - packages/**
+
+scripts:
+  get: melos exec -- flutter pub get
+  clean: melos exec -- flutter clean
+  analyze: melos exec -- flutter analyze
+  test: melos exec -- flutter test
+  format: melos exec -- dart format .
+
+  build:windows:
+    run: cd apps/desktop_app && flutter build windows --release
+    description: Build the Windows desktop application

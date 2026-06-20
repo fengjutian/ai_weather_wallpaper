@@ -1,0 +1,19 @@
+name: local_storage
+description: Local storage package providing SQLite (sqflite), Hive, and TTL-based cache management for the AI Weather Wallpaper app.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  sqflite: ^2.3.0
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0

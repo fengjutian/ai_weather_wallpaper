@@ -1,0 +1,46 @@
+# Flutter / Dart
+.dart_tool/
+.packages
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+pubspec.lock
+**/pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# macOS
+.DS_Store
+
+# Windows
+*.exe
+*.dll
+*.pdb
+*.msi
+*.zip
+*.7z
+
+# Native build artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake-build-*/
+out/
+*.obj
+*.lib
+*.exp
+
+# Dist
+dist/
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+*.env
