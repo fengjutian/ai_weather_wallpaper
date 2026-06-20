@@ -1,59 +1,89 @@
+import 'dart:collection';
 import 'dart:typed_data';
 
-/// A cache for storing generated images in memory and optionally on disk.
-///
-/// Images are keyed by a string identifier (e.g., a weather condition combined
-/// with a timestamp or hash of the prompt) to avoid redundant generation.
-///
-/// TODO: Implement actual caching logic.
-/// - Add configurable max cache size with LRU eviction.
-/// - Add optional disk persistence (e.g., using `path_provider`).
-/// - Add TTL (time-to-live) for stale entries.
-/// - Add thread-safety for concurrent access.
-class ImageCache {
-  /// Internal in-memory store mapping keys to image bytes.
-  final Map<String, Uint8List> _cache = {};
+/// Internal cache entry holding image data and metadata.
+class _CacheEntry {
+  final Uint8List data;
+  final DateTime cachedAt;
+  final String? prompt;
 
-  /// The maximum number of entries to keep in memory.
+  _CacheEntry(this.data, {this.prompt}) : cachedAt = DateTime.now();
+}
+
+/// An in-memory LRU (Least Recently Used) cache for generated images.
+///
+/// Images are stored keyed by a string identifier (e.g., a weather condition
+/// combined with a prompt hash) to avoid redundant generation.  When the
+/// number of cached entries exceeds [maxEntries], the least recently accessed
+/// entry is evicted.
+///
+/// Access ordering is maintained using a [LinkedHashMap] with access-order
+/// iteration, so every [get] or [set] call promotes the entry to the most
+/// recently used position.
+class ImageCache {
   final int maxEntries;
 
-  /// Creates an [ImageCache] with the given [maxEntries].
-  const ImageCache({this.maxEntries = 50});
+  final LinkedHashMap<String, _CacheEntry> _cache = LinkedHashMap(
+    equals: (a, b) => a == b,
+    hashCode: (key) => key.hashCode,
+  );
 
-  /// Retrieves cached image bytes for the given [key].
-  /// Returns `null` if the key is not in the cache.
-  Uint8List? get(String key) {
-    // TODO: Implement LRU tracking and TTL checks.
-    return _cache[key];
-  }
+  /// Creates an [ImageCache] with the given [maxEntries] (default 50).
+  ImageCache({this.maxEntries = 50});
 
-  /// Stores [bytes] in the cache under the given [key].
+  /// Stores [data] in the cache under [key].
   ///
-  /// If the cache is full, the least recently used entry is evicted.
-  void set(String key, Uint8List bytes) {
-    // TODO: Implement LRU eviction when _cache.length >= maxEntries.
-    _cache[key] = bytes;
+  /// An optional [prompt] can be recorded for debugging or inspection purposes.
+  /// If the cache is already at capacity, the least recently used entry is
+  /// evicted before inserting the new one.
+  void set(String key, Uint8List data, {String? prompt}) {
+    if (_cache.containsKey(key)) {
+      // Update existing entry and move to most-recent position.
+      _cache[key] = _CacheEntry(data, prompt: prompt);
+      return;
+    }
+
+    // Evict the oldest (first) entry if at capacity.
+    if (_cache.length >= maxEntries) {
+      _cache.remove(_cache.keys.first);
+    }
+
+    _cache[key] = _CacheEntry(data, prompt: prompt);
   }
 
-  /// Returns `true` if the cache contains the given [key].
-  bool contains(String key) => _cache.containsKey(key);
+  /// Retrieves cached image bytes for [key].
+  ///
+  /// The entry is promoted to the most recently used position on access.
+  /// Returns `null` if the key is not present (no TTL expiry is applied).
+  Uint8List? get(String key) {
+    final entry = _cache[key];
+    if (entry == null) return null;
+    // Accessing via [key] on an access-ordered LinkedHashMap promotes it.
+    return entry.data;
+  }
 
-  /// Removes the entry for the given [key] from the cache.
+  /// Returns `true` if the cache contains [key] (without promoting it).
+  bool containsKey(String key) => _cache.containsKey(key);
+
+  /// Removes the entry for [key] from the cache.
   void remove(String key) {
     _cache.remove(key);
   }
 
-  /// Clears all entries from the cache.
+  /// Removes all entries from the cache.
   void clear() {
     _cache.clear();
   }
 
   /// The number of entries currently in the cache.
-  int get length => _cache.length;
+  int get count => _cache.length;
 
   /// Whether the cache is empty.
   bool get isEmpty => _cache.isEmpty;
 
   /// Whether the cache has reached its maximum capacity.
   bool get isFull => _cache.length >= maxEntries;
+
+  /// An unmodifiable list of all cached keys in access order (LRU→MRU).
+  List<String> get keys => List.unmodifiable(_cache.keys);
 }

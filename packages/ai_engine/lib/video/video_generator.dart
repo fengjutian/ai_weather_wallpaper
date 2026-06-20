@@ -1,55 +1,12 @@
-/// A service for generating videos using AI video generation models.
+/// Supported AI video generation providers.
 ///
-/// Intended to support future integration with services like:
-/// - OpenAI Sora (text-to-video)
-/// - Runway Gen-2 / Gen-3
-/// - Pika Labs
-/// - Kling (Kuaishou)
-///
-/// TODO: Implement actual video generation logic.
-/// - Define a unified interface for multiple backends.
-/// - Implement authentication and API calls for each provider.
-/// - Handle long-running generation jobs with polling.
-/// - Support different aspect ratios, durations, and styles.
-class VideoGenerator {
-  /// The video generation provider to use.
-  final VideoProvider provider;
-
-  /// Creates a [VideoGenerator] for the given [provider].
-  const VideoGenerator({this.provider = VideoProvider.sora});
-
-  /// Generates a video from the given [prompt].
-  ///
-  /// [duration] is the desired length in seconds (where supported).
-  /// Returns a [VideoGenerationResult] containing the video URL and metadata.
-  Future<VideoGenerationResult> generateVideo({
-    required String prompt,
-    int duration = 5,
-    String? size,
-  }) async {
-    // TODO: Implement actual video generation.
-    // 1. Select the appropriate API endpoint based on [provider].
-    // 2. Send the request with authentication.
-    // 3. Poll for completion if the API is async.
-    // 4. Download or return the URL of the generated video.
-    throw UnimplementedError(
-      'VideoGenerator.generateVideo() is not yet implemented.',
-    );
-  }
-
-  /// Validates the current configuration for the selected provider.
-  Future<bool> validateConfig() async {
-    // TODO: Check API keys and endpoint availability for [provider].
-    return false;
-  }
-}
-
-/// Supported video generation providers.
+/// These represent services that can generate video from text prompts.
+/// Actual integration is planned for future releases.
 enum VideoProvider {
   /// OpenAI Sora — text-to-video model.
   sora,
 
-  /// Runway Gen-2 or Gen-3.
+  /// Runway Gen-2 / Gen-3.
   runway,
 
   /// Pika Labs.
@@ -59,20 +16,33 @@ enum VideoProvider {
   kling,
 }
 
-/// The result of a video generation request.
-class VideoGenerationResult {
-  /// URL where the generated video can be accessed or downloaded.
-  final String? videoUrl;
+/// A service for generating videos using AI video generation models.
+///
+/// This is currently a stub that indicates video generation is not yet
+/// available.  It serves as a placeholder for future integration with
+/// services like OpenAI Sora, Runway, Pika, and Kling.
+class VideoGenerator {
+  /// Generates a video from the given [prompt].
+  ///
+  /// [provider] selects which backend to use (default: [VideoProvider.sora]).
+  ///
+  /// Returns a placeholder URL string when video generation becomes available,
+  /// or `null` as a stub value for now.
+  Future<String?> generateVideo(
+    String prompt, {
+    VideoProvider provider = VideoProvider.sora,
+  }) async {
+    // Stub: video generation is not yet implemented.
+    // When ready, this will:
+    //   1. Route to the appropriate provider's API.
+    //   2. Submit the generation job.
+    //   3. Poll for completion (or use a webhook).
+    //   4. Return the URL of the generated video.
+    return null;
+  }
 
-  /// Local file path if the video has been downloaded.
-  final String? localPath;
-
-  /// The prompt used for generation.
-  final String prompt;
-
-  const VideoGenerationResult({
-    this.videoUrl,
-    this.localPath,
-    required this.prompt,
-  });
+  /// Returns `true` if the given [provider] is currently available for use.
+  ///
+  /// All providers return `false` until video generation is implemented.
+  bool isAvailable(VideoProvider provider) => false;
 }

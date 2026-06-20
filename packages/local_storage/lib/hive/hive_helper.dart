@@ -1,82 +1,107 @@
 import 'package:hive_flutter/hive_flutter.dart';
 
-/// Lightweight key-value storage helper backed by Hive.
+/// Singleton helper for lightweight key-value storage backed by Hive.
 ///
-/// Use for small, frequently-read values such as:
-///   - user preferences (theme, units, temperature scale)
-///   - last-selected city
-///   - onboarding completion flag
-///   - feature flags
-///
-/// For relational or large payloads prefer [DatabaseHelper].
+/// Manages three Hive boxes:
+///   - `settings`      — app preferences (theme, units, temperature scale)
+///   - `weather_cache`  — lightweight weather data snapshots
+///   - `session`        — current-session state (last city, onboarding flag)
 ///
 /// Usage:
 /// ```dart
-/// final helper = HiveHelper();
-/// await helper.put('theme_mode', 'dark');
-/// final theme = await helper.get<String>('theme_mode');
+/// final hive = HiveHelper.instance;
+/// await hive.init();
+/// await hive.put('settings', 'themeMode', 'dark');
+/// final theme = hive.get('settings', 'themeMode', defaultValue: 'light');
 /// ```
 class HiveHelper {
-  static const String _defaultBoxName = 'app_prefs';
+  HiveHelper._internal();
+  static final HiveHelper instance = HiveHelper._internal();
 
-  /// Opens (or reuses) the default Hive box.
-  Future<Box> get box => Hive.openBox(_defaultBoxName);
+  static bool _initialized = false;
 
-  // ---------------------------------------------------------------------------
-  // Generic accessors
-  // ---------------------------------------------------------------------------
+  /// The names of the boxes managed by this helper.
+  static const List<String> boxNames = [
+    'settings',
+    'weather_cache',
+    'session',
+  ];
 
-  /// Reads a value of type [T] for [key], or null if absent.
-  Future<T?> get<T>(String key) async {
-    final b = await box;
-    return b.get(key) as T?;
+  final Map<String, Box> _boxes = {};
+
+  /// Whether [init] has been called successfully.
+  bool get isInitialized => _initialized;
+
+  /// Initializes Hive and opens all managed boxes.
+  ///
+  /// Safe to call multiple times — subsequent calls are no-ops once
+  /// the boxes have been opened.
+  Future<void> init() async {
+    if (_initialized) return;
+
+    await Hive.initFlutter();
+
+    for (final name in boxNames) {
+      final box = await Hive.openBox(name);
+      _boxes[name] = box;
+    }
+
+    _initialized = true;
   }
 
-  /// Writes a [value] for [key].
-  Future<void> put<T>(String key, T value) async {
-    final b = await box;
-    await b.put(key, value);
+  /// Returns the opened [Box] for [boxName], or throws a [StateError] if
+  /// [init] has not been called or the box was not opened.
+  Box _box(String boxName) {
+    if (!_initialized) {
+      throw StateError(
+        'HiveHelper has not been initialized. Call init() first.',
+      );
+    }
+    final box = _boxes[boxName];
+    if (box == null) {
+      throw ArgumentError('Unknown Hive box: "$boxName". '
+          'Available boxes: $boxNames');
+    }
+    return box;
   }
 
-  /// Removes the entry for [key].
-  Future<void> delete(String key) async {
-    final b = await box;
-    await b.delete(key);
+  /// Writes a [value] for [key] in the specified [boxName].
+  ///
+  /// [boxName] must be one of: `settings`, `weather_cache`, or `session`.
+  Future<void> put(String boxName, String key, dynamic value) async {
+    await _box(boxName).put(key, value);
   }
 
-  /// Returns `true` when the box contains [key].
-  Future<bool> containsKey(String key) async {
-    final b = await box;
-    return b.containsKey(key);
+  /// Reads the value for [key] from [boxName].
+  ///
+  /// Returns [defaultValue] when the key is absent (defaults to `null`).
+  dynamic get(String boxName, String key, {dynamic defaultValue}) {
+    return _box(boxName).get(key, defaultValue: defaultValue);
   }
 
-  /// Clears **all** entries from the default box.
-  Future<void> clear() async {
-    final b = await box;
-    await b.clear();
+  /// Removes the entry for [key] from [boxName].
+  Future<void> delete(String boxName, String key) async {
+    await _box(boxName).delete(key);
   }
 
-  // ---------------------------------------------------------------------------
-  // Convenience typed helpers
-  // ---------------------------------------------------------------------------
-
-  /// Persist a [bool] preference.
-  Future<void> setBool(String key, bool value) => put(key, value);
-
-  /// Retrieve a [bool] preference (defaults to `false`).
-  Future<bool> getBool(String key, {bool defaultValue = false}) async {
-    return (await get<bool>(key)) ?? defaultValue;
+  /// Returns `true` when [boxName] contains [key].
+  bool containsKey(String boxName, String key) {
+    return _box(boxName).containsKey(key);
   }
 
-  /// Persist a [String] preference.
-  Future<void> setString(String key, String value) => put(key, value);
+  /// Removes **all** entries from [boxName].
+  Future<void> clearBox(String boxName) async {
+    await _box(boxName).clear();
+  }
 
-  /// Retrieve a [String] preference.
-  Future<String?> getString(String key) => get<String>(key);
-
-  /// Persist an [int] preference.
-  Future<void> setInt(String key, int value) => put(key, value);
-
-  /// Retrieve an [int] preference.
-  Future<int?> getInt(String key) => get<int>(key);
+  /// Closes all open Hive boxes and resets the helper state.
+  ///
+  /// After calling this method [init] must be called again before further use.
+  Future<void> close() async {
+    for (final box in _boxes.values) {
+      await box.close();
+    }
+    _boxes.clear();
+    _initialized = false;
+  }
 }

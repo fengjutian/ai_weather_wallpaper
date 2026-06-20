@@ -1,189 +1,191 @@
-/// Type of audio effect that can be applied to a track or the master mix.
-enum EffectType {
-  /// Convolution / digital reverb (e.g. room, hall, cathedral).
-  reverb,
-
-  /// Low-pass, high-pass, band-pass filters.
-  filter,
-
-  /// Multi-band parametric equaliser.
-  equalizer,
-
-  /// Dynamic range compression.
-  compressor,
-
-  /// Chorus / phaser / flanger modulation effects.
-  modulation,
-}
-
-/// Parameters shared by all effect types.
+/// Parameters for a reverberation effect.
 ///
-/// Each subclass adds its own typed parameters.
-abstract class EffectParams {
-  /// Whether this effect is currently active.
-  bool enabled;
+/// On desktop platforms without native DSP support, this configuration is
+/// stored and can be forwarded to a server-side or pre-processing pipeline
+/// that applies the effect to audio files before playback.
+class ReverbParams {
+  /// Decay time in seconds — how long the reverb tail lasts.
+  double decay;
 
-  /// The mix (wet/dry) ratio — 0.0 = dry only, 1.0 = wet only.
-  double wetDryMix;
+  /// Pre-delay in milliseconds — the gap between the dry signal and the
+  /// onset of the reverberation.
+  double preDelay;
 
-  EffectParams({this.enabled = true, this.wetDryMix = 0.5});
+  /// Creates [ReverbParams] with sensible default values.
+  ///
+  /// [decay] defaults to 2.0 seconds. [preDelay] defaults to 20 ms.
+  ReverbParams({this.decay = 2.0, this.preDelay = 20.0});
 }
 
-/// Reverb parameters.
-class ReverbParams extends EffectParams {
-  /// Decay time in seconds.
-  double decaySeconds;
+/// Parameters for a filter effect.
+///
+/// Supported filter types: `lowpass`, `highpass`, `bandpass`.
+///
+/// This is a configuration model; the actual filtering must be performed
+/// by a downstream DSP processor or external tool.
+class FilterParams {
+  /// The filter type: `lowpass`, `highpass`, or `bandpass`.
+  String type;
 
-  /// Pre-delay in milliseconds.
-  double preDelayMs;
+  /// Cut-off frequency in Hertz.
+  double cutoff;
 
-  /// Early reflections level (dB).
-  double earlyReflectionsLevel;
-
-  ReverbParams({
-    super.enabled = true,
-    super.wetDryMix = 0.5,
-    this.decaySeconds = 2.0,
-    this.preDelayMs = 20.0,
-    this.earlyReflectionsLevel = -10.0,
-  });
-}
-
-/// Filter parameters.
-class FilterParams extends EffectParams {
-  /// Cut-off frequency in Hz.
-  double cutoffHz;
-
-  /// Filter resonance / Q-factor.
+  /// Resonance / Q-factor of the filter.
+  ///
+  /// Higher values produce a sharper peak at the cut-off frequency.
   double q;
 
+  /// Creates [FilterParams] with a low-pass default (200 Hz, Q=0.707).
   FilterParams({
-    super.enabled = true,
-    super.wetDryMix = 1.0,
-    this.cutoffHz = 200.0,
+    this.type = 'lowpass',
+    this.cutoff = 200.0,
     this.q = 0.707,
   });
 }
 
-/// Equaliser band definition.
-class EqBand {
-  /// Centre frequency in Hz.
-  final double frequencyHz;
+/// Parameters for a 5-band graphic equaliser.
+///
+/// The [gains] list contains five values (one per band) in dB, one for each
+/// of the following centre frequencies:
+///
+/// | Index | Frequency |
+/// |-------|-----------|
+/// | 0     | 60 Hz     |
+/// | 1     | 230 Hz    |
+/// | 2     | 910 Hz    |
+/// | 3     | 4 kHz     |
+/// | 4     | 14 kHz    |
+///
+/// This is a configuration model; the actual EQ filtering must be performed
+/// by a downstream DSP processor or external tool.
+class EqualizerParams {
+  /// Five gain values in dB, one per EQ band.
+  ///
+  /// Defaults to all zeros (flat response).
+  List<double> gains;
 
-  /// Gain in dB (-24 … +24).
-  double gainDb;
-
-  /// Bandwidth in octaves.
-  double bandwidthOct;
-
-  EqBand({
-    required this.frequencyHz,
-    this.gainDb = 0.0,
-    this.bandwidthOct = 1.0,
-  });
+  /// Creates [EqualizerParams] with an optional list of five gain values.
+  ///
+  /// If [gains] is omitted, all bands default to 0 dB (flat).
+  EqualizerParams({List<double>? gains})
+      : gains = gains ??
+            [0.0, 0.0, 0.0, 0.0, 0.0] {
+    if (this.gains.length != 5) {
+      throw ArgumentError('EqualizerParams requires exactly 5 gain values');
+    }
+  }
 }
 
-/// Equaliser parameters.
-class EqualizerParams extends EffectParams {
-  /// Ordered list of EQ bands (low → high frequency).
-  final List<EqBand> bands;
-
-  EqualizerParams({
-    super.enabled = true,
-    super.wetDryMix = 1.0,
-    List<EqBand>? bands,
-  }) : bands = bands ??
-            [
-              EqBand(frequencyHz: 60, gainDb: 0.0),
-              EqBand(frequencyHz: 230, gainDb: 0.0),
-              EqBand(frequencyHz: 910, gainDb: 0.0),
-              EqBand(frequencyHz: 4000, gainDb: 0.0),
-              EqBand(frequencyHz: 14000, gainDb: 0.0),
-            ];
-}
-
-/// Applies digital signal-processing (DSP) effects to an audio stream.
+/// A configuration model for audio effects (reverb, filter, equaliser).
 ///
-/// ## Supported Effects
+/// ## Purpose
 ///
-/// | Effect        | Description                                       |
-/// |---------------|---------------------------------------------------|
-/// | Reverb        | Room / hall / cathedral convolution reverb        |
-/// | Filter        | Low-pass, high-pass, band-pass (state-variable)   |
-/// | Equalizer     | Multi-band peaking / shelving EQ                  |
-/// | Compressor    | Dynamic range compression (future)                |
+/// On desktop platforms, real-time DSP effect processing is not feasible
+/// without native audio processing plugins.  This class stores effect
+/// parameters that can be:
+///
+/// * Forwarded to a server-side audio processing pipeline;
+/// * Applied to audio files as a pre-processing step;
+/// * Used by a native platform channel implementation;
+/// * Inspected for debug / UI display purposes.
 ///
 /// ## Usage
 ///
 /// ```dart
 /// final fx = AudioEffects();
-/// fx.setReverb(ReverbParams(decaySeconds: 3.0, wetDryMix: 0.3));
-/// fx.applyTo(buffer);
+/// fx.setReverb(ReverbParams(decay: 3.0, preDelay: 30.0));
+/// fx.setFilter(FilterParams(type: 'lowpass', cutoff: 500.0));
+/// fx.setEqualizer(EqualizerParams(gains: [-2.0, 0.0, 1.5, 3.0, 0.0]));
+/// print(fx.describe());
 /// ```
-///
-/// **TODO(jutianfeng):** Replace the stub with a real DSP engine.
-///   - Implement convolution reverb via FFT / partitioned convolution.
-///   - Implement state-variable filter (SVF) for LP/HP/BP.
-///   - Implement biquad filters for the equaliser.
-///   - All processing should operate on `Float64List` PCM buffers.
 class AudioEffects {
-  ReverbParams _reverb = ReverbParams();
-  FilterParams _filter = FilterParams();
-  EqualizerParams _equalizer = EqualizerParams();
+  ReverbParams? _reverb;
+  FilterParams? _filter;
+  EqualizerParams? _equalizer;
 
-  /// The current reverb configuration.
-  ReverbParams get reverb => _reverb;
+  // ---------------------------------------------------------------------------
+  // Getters
+  // ---------------------------------------------------------------------------
 
-  /// The current filter configuration.
-  FilterParams get filter => _filter;
+  /// The current reverb parameters, or `null` if reverb is not configured.
+  ReverbParams? get reverb => _reverb;
 
-  /// The current equaliser configuration.
-  EqualizerParams get equalizer => _equalizer;
+  /// The current filter parameters, or `null` if filter is not configured.
+  FilterParams? get filter => _filter;
 
-  /// Updates the reverb parameters.
-  void setReverb(ReverbParams params) {
-    // TODO(jutianfeng): Recalculate reverb impulse response / IR.
+  /// The current equaliser parameters, or `null` if EQ is not configured.
+  EqualizerParams? get equalizer => _equalizer;
+
+  // ---------------------------------------------------------------------------
+  // Configuration
+  // ---------------------------------------------------------------------------
+
+  /// Configures the reverb effect with [params].
+  ///
+  /// Pass `null` to clear the reverb configuration.
+  void setReverb(ReverbParams? params) {
     _reverb = params;
   }
 
-  /// Updates the filter parameters.
-  void setFilter(FilterParams params) {
-    // TODO(jutianfeng): Recalculate filter coefficients (biquad / SVF).
+  /// Configures the filter effect with [params].
+  ///
+  /// Pass `null` to clear the filter configuration.
+  void setFilter(FilterParams? params) {
     _filter = params;
   }
 
-  /// Updates the equaliser parameters.
-  void setEqualizer(EqualizerParams params) {
-    // TODO(jutianfeng): Recalculate per-band biquad coefficients.
+  /// Configures the equaliser effect with [params].
+  ///
+  /// Pass `null` to clear the equaliser configuration.
+  void setEqualizer(EqualizerParams? params) {
     _equalizer = params;
   }
 
-  /// Applies all enabled effects to an in-place PCM frame [buffer].
-  ///
-  /// [buffer] is a flat `Float64List` interleaved as `[L, R, L, R, ...]`.
-  /// [numChannels] defaults to 2 (stereo).
-  ///
-  /// Effects are applied in order: filter → equalizer → reverb.
-  ///
-  /// **TODO(jutianfeng):** Implement the actual DSP chain.
-  void applyTo(List<double> buffer, {int numChannels = 2}) {
-    // TODO(jutianfeng): Chain DSP processors:
-    //   if (_filter.enabled) => applyStateVariableFilter(buffer);
-    //   if (_equalizer.enabled) => applyEqualizer(buffer);
-    //   if (_reverb.enabled) => applyConvolutionReverb(buffer);
+  /// Removes all configured effects.
+  void clearEffects() {
+    _reverb = null;
+    _filter = null;
+    _equalizer = null;
   }
 
-  /// Bypasses (disables) all effects at once.
-  void bypassAll() {
-    _reverb.enabled = false;
-    _filter.enabled = false;
-    _equalizer.enabled = false;
+  // ---------------------------------------------------------------------------
+  // Inspection
+  // ---------------------------------------------------------------------------
+
+  /// Returns a human-readable description of all currently configured effects.
+  ///
+  /// Example output:
+  /// ```
+  /// AudioEffects:
+  ///   Reverb: decay=2.0s, preDelay=20.0ms
+  ///   Filter: type=lowpass, cutoff=200.0Hz, Q=0.707
+  ///   Equalizer: [0.0, 0.0, 0.0, 0.0, 0.0] dB
+  /// ```
+  String describe() {
+    final parts = <String>['AudioEffects:'];
+
+    if (_reverb != null) {
+      parts.add(
+        '  Reverb: decay=${_reverb!.decay}s, preDelay=${_reverb!.preDelay}ms',
+      );
+    }
+    if (_filter != null) {
+      parts.add(
+        '  Filter: type=${_filter!.type}, '
+            'cutoff=${_filter!.cutoff}Hz, Q=${_filter!.q}',
+      );
+    }
+    if (_equalizer != null) {
+      parts.add('  Equalizer: ${_equalizer!.gains} dB');
+    }
+    if (_reverb == null && _filter == null && _equalizer == null) {
+      parts.add('  (no effects configured)');
+    }
+
+    return parts.join('\n');
   }
 
-  /// Enables all effects with their current parameters.
-  void enableAll() {
-    _reverb.enabled = true;
-    _filter.enabled = true;
-    _equalizer.enabled = true;
-  }
+  /// Whether any effects are currently configured.
+  bool get hasEffects =>
+      _reverb != null || _filter != null || _equalizer != null;
 }
