@@ -1,5 +1,5 @@
 import 'dart:collection';
-import 'hive/hive_helper.dart';
+import '../hive/hive_helper.dart';
 
 /// Internal wrapper holding a cached value, its expiry timestamp, and TTL.
 class _CacheEntry<T> {

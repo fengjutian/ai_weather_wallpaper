@@ -44,7 +44,8 @@ class OpenWeatherProvider implements WeatherProvider {
 
     final response = await _get(uri);
     final body = json.decode(response) as Map<String, dynamic>;
-    final weatherList = body['weather'] as List<dynamic>?;
+    final weatherListRaw = body['weather'];
+    final weatherList = weatherListRaw is List ? weatherListRaw.cast<dynamic>() : null;
     final weather = (weatherList != null && weatherList.isNotEmpty)
         ? weatherList[0] as Map<String, dynamic>
         : null;

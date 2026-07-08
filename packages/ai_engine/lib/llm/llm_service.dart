@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'image_generator.dart' show AiApiException;
+import '../image/image_generator.dart' show AiApiException;
 
 /// A service for optimizing and refining prompts using OpenAI's chat
 /// completions API.

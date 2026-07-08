@@ -20,10 +20,10 @@ class ForecastEntry {
 
   factory ForecastEntry.fromJson(Map<String, dynamic> json) => ForecastEntry(
         timestamp: DateTime.parse(json['timestamp'] as String),
-        tempMin: (json['temp_min'] as num).toDouble(),
-        tempMax: (json['temp_max'] as num).toDouble(),
-        weather: json['weather'] as String,
-        humidity: json['humidity'] as int,
+        tempMin: (json['temp_min'] as num?)?.toDouble() ?? 0.0,
+        tempMax: (json['temp_max'] as num?)?.toDouble() ?? 0.0,
+        weather: json['weather'] as String? ?? 'unknown',
+        humidity: json['humidity'] as int? ?? 0,
         iconCode: json['icon_code'] as String?,
       );
 
@@ -42,7 +42,7 @@ class Forecast {
   final List<ForecastEntry> entries;
   final DateTime fetchedAt;
 
-  const Forecast({required this.entries, DateTime? fetchedAt})
+  Forecast({required this.entries, DateTime? fetchedAt})
       : fetchedAt = fetchedAt ?? DateTime.now();
 
   factory Forecast.fromJson(Map<String, dynamic> json) => Forecast(

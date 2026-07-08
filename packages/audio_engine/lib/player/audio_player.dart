@@ -72,6 +72,8 @@ class AudioPlayer {
       if (config.loop) {
         _player.setReleaseMode(ap.ReleaseMode.loop);
       }
+      // Pre-set the source so play() works without a path argument.
+      _player.setSource(_resolveSource(config.source));
     }
   }
 
@@ -230,6 +232,8 @@ class AudioPlayer {
       case ap.PlayerState.stopped:
       case ap.PlayerState.completed:
         _stateNotifier.value = PlayerState.stopped;
+      case ap.PlayerState.disposed:
+        _stateNotifier.value = PlayerState.error;
     }
   }
 }

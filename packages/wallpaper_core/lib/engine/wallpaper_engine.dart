@@ -83,6 +83,9 @@ class WallpaperEngine {
   final ValueNotifier<WallpaperState> _stateNotifier =
       ValueNotifier<WallpaperState>(WallpaperState.idle);
 
+  /// The error from the most recent failure, if any.
+  Object? lastError;
+
   /// The current engine state.
   WallpaperState get state => _state;
 
@@ -357,5 +360,8 @@ class WallpaperEngine {
   void _setState(WallpaperState newState, {Object? error}) {
     _state = newState;
     _stateNotifier.value = newState;
+    if (error != null) {
+      lastError = error;
+    }
   }
 }

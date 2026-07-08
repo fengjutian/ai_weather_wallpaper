@@ -31,12 +31,9 @@ export 'mixer/audio_mixer.dart' show AudioMixer;
 export 'effects/audio_effects.dart'
     show
         AudioEffects,
-        EffectType,
-        EffectParams,
         ReverbParams,
         FilterParams,
-        EqualizerParams,
-        EqBand;
+        EqualizerParams;
 
 // ---------------------------------------------------------------------------
 // Built-in preset configurations
