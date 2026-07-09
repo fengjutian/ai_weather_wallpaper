@@ -2,16 +2,38 @@ import 'package:flutter/material.dart';
 import 'dart:ui' show ImageFilter;
 import '../themes/app_theme.dart';
 
-/// A frosted-glass card with blurred background.
-///
-/// Renders a translucent card with a `BackdropFilter` blur effect,
-/// mimicking the Apple macOS / iOS frosted-glass aesthetic.
-///
-/// ```dart
-/// GlassCard(
-///   child: Text('Hello'),
-/// )
-/// ```
+/// Helper: returns a theme-adaptive text color for glass surfaces.
+Color _textColor(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? Colors.white
+        : Colors.black87;
+
+Color _mutedColor(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? Colors.white70
+        : Colors.black54;
+
+Color _subtleColor(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? Colors.white38
+        : Colors.black26;
+
+Color _glassBg(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withOpacity(0.06)
+        : Colors.black.withOpacity(0.06);
+
+Color _glassBorder(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withOpacity(0.08)
+        : Colors.black.withOpacity(0.08);
+
+Color _glassOverlay(BuildContext context) =>
+    Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withOpacity(0.15)
+        : Colors.black.withOpacity(0.06);
+
+/// A frosted-glass card with blurred background — theme-aware.
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -41,12 +63,9 @@ class GlassCard extends StatelessWidget {
           child: Container(
             padding: padding,
             decoration: BoxDecoration(
-              color: (backgroundColor ?? AppTheme.glassOverlay)
-                  .withOpacity(0.15),
+              color: backgroundColor ?? _glassOverlay(context),
               borderRadius: BorderRadius.circular(borderRadius),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.1),
-              ),
+              border: Border.all(color: _glassBorder(context)),
             ),
             child: child,
           ),
@@ -56,9 +75,7 @@ class GlassCard extends StatelessWidget {
   }
 }
 
-/// A frosted-glass styled app bar replacement.
-///
-/// Use at the top of a [Stack] to overlay a translucent title bar.
+/// A frosted-glass styled app bar replacement — theme-aware.
 class GlassAppBar extends StatelessWidget {
   final String title;
   final List<Widget>? actions;
@@ -75,6 +92,7 @@ class GlassAppBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textColor = _textColor(context);
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
       child: BackdropFilter(
@@ -82,10 +100,8 @@ class GlassAppBar extends StatelessWidget {
         child: Container(
           padding: padding,
           decoration: BoxDecoration(
-            color: AppTheme.glassOverlay.withOpacity(0.12),
-            border: Border(
-              bottom: BorderSide(color: Colors.white.withOpacity(0.06)),
-            ),
+            color: _glassBg(context).withOpacity(0.5),
+            border: Border(bottom: BorderSide(color: _glassBorder(context))),
           ),
           child: SafeArea(
             bottom: false,
@@ -94,20 +110,11 @@ class GlassAppBar extends StatelessWidget {
                 if (onBack != null)
                   Padding(
                     padding: const EdgeInsets.only(right: 12),
-                    child: _CircleButton(
-                      icon: Icons.arrow_back_ios_new,
-                      onTap: onBack!,
-                    ),
+                    child: _CircleButton(icon: Icons.arrow_back_ios_new, onTap: onBack!),
                   ),
                 Expanded(
-                  child: Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
+                  child: Text(title,
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: textColor)),
                 ),
                 if (actions != null) ...actions!,
               ],
@@ -119,11 +126,9 @@ class GlassAppBar extends StatelessWidget {
   }
 }
 
-/// A small circular icon button for glass headers.
 class _CircleButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-
   const _CircleButton({required this.icon, required this.onTap});
 
   @override
@@ -132,12 +137,12 @@ class _CircleButton extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
         child: Material(
-          color: Colors.white.withOpacity(0.08),
+          color: _glassBg(context),
           child: InkWell(
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.all(10),
-              child: Icon(icon, size: 16, color: Colors.white70),
+              child: Icon(icon, size: 16, color: _mutedColor(context)),
             ),
           ),
         ),

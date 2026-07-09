@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _activePath;
   AudioPlayer? _audioPlayer;
   int _sidebarIndex = 0;
-  bool _sidebarHovered = false;
+  bool _sidebarHovered = true;
 
   static const _sidebarItems = [
     _SidebarItem(Icons.photo_library_outlined, '壁纸库'),
@@ -41,15 +41,20 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadHistory();
-    _engine.stateNotifier.addListener(() { if (mounted) setState(() {}); });
+    _engine.stateNotifier.addListener(_onStateChange);
+    themeModeNotifier.addListener(_onThemeChange);
   }
 
   @override
   void dispose() {
     _audioPlayer?.dispose();
-    _engine.stateNotifier.removeListener(() {});
+    _engine.stateNotifier.removeListener(_onStateChange);
+    themeModeNotifier.removeListener(_onThemeChange);
     super.dispose();
   }
+
+  void _onStateChange() { if (mounted) setState(() {}); }
+  void _onThemeChange() { if (mounted) setState(() {}); }
 
   void _loadHistory() {
     final raw = _hive.get('session', 'wallpaperHistory', defaultValue: <dynamic>[]);
@@ -138,6 +143,18 @@ class _HomeScreenState extends State<HomeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  // ─── Theme helpers ────────────────────────────────────────────────────
+  Color get _text => Theme.of(context).brightness == Brightness.dark
+      ? Colors.white : Colors.black87;
+  Color get _muted => Theme.of(context).brightness == Brightness.dark
+      ? Colors.white70 : Colors.black54;
+  Color get _subtle => Theme.of(context).brightness == Brightness.dark
+      ? Colors.white38 : Colors.black38;
+  Color get _faint => Theme.of(context).brightness == Brightness.dark
+      ? Colors.white12 : Colors.black12;
+  Color get _dividerColor => Theme.of(context).brightness == Brightness.dark
+      ? Colors.white10 : Colors.black12;
+
   // ─── Build ────────────────────────────────────────────────────────────
 
   @override
@@ -159,7 +176,10 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
-                  colors: [Colors.black.withOpacity(0.4), Colors.black.withOpacity(0.65)],
+                  colors: [
+                    Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.15),
+                    Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.65 : 0.3),
+                  ],
                 ),
               ),
             ),
@@ -189,6 +209,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildSidebar() {
     final expanded = _sidebarHovered;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? Colors.black.withOpacity(0.25) : Colors.white.withOpacity(0.3);
+    final borderColor = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06);
     return MouseRegion(
       onEnter: (_) => setState(() => _sidebarHovered = true),
       onExit: (_) => setState(() => _sidebarHovered = false),
@@ -202,8 +225,8 @@ class _HomeScreenState extends State<HomeScreen> {
             filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.25),
-                border: Border(right: BorderSide(color: Colors.white.withOpacity(0.06))),
+                color: bgColor,
+                border: Border(right: BorderSide(color: borderColor)),
               ),
               child: SafeArea(
                 child: Column(
@@ -226,8 +249,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           if (expanded) ...[
                             const SizedBox(width: 12),
-                            const Text('AI 天气壁纸',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+                            Text('AI 天气壁纸',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                                    color: isDark ? Colors.white : Colors.black87)),
                           ],
                         ],
                       ),
@@ -237,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (expanded)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Divider(color: Colors.white.withOpacity(0.08), height: 1),
+                        child: Divider(color: (isDark ? Colors.white : Colors.black).withOpacity(0.08), height: 1),
                       ),
                     const SizedBox(height: 8),
                     // Nav items
@@ -250,7 +274,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (expanded)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Divider(color: Colors.white.withOpacity(0.08), height: 1),
+                        child: Divider(color: (isDark ? Colors.white : Colors.black).withOpacity(0.08), height: 1),
                       ),
                     const SizedBox(height: 4),
                     // Bottom buttons
@@ -333,7 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? _buildDetailPanel(_selected!)
                             : _glassPanel(const Center(
                                 child: Text('选择一张壁纸查看详情',
-                                    style: TextStyle(color: Colors.white30)))),
+                                    style: TextStyle(color: _subtle)))),
                       ),
                     ],
                   ),
@@ -431,7 +455,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const SnackBar(content: Text('下次启动时将自动最小化到托盘')));
                             }
                           }),
-                      const Divider(color: Colors.white10),
+                      Divider(color: _dividerColor),
                       _macSwitch('开机自启动', autoStart,
                           (v) {
                             _hive.put('settings', 'autoStart', v);
@@ -439,7 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text(v ? '已开启开机自启动（重启后生效）' : '已关闭开机自启动')));
                           }),
-                      const Divider(color: Colors.white10),
+                      Divider(color: _dividerColor),
                       _macSwitch('浅色模式',
                           themeModeNotifier.value == ThemeMode.light,
                           (v) {
@@ -493,7 +517,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
                 const Text('AI 天气壁纸', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                 const SizedBox(height: 8),
-                const Text('将 Windows 桌面变成活的画布', style: TextStyle(color: Colors.white54)),
+                const Text('将 Windows 桌面变成活的画布', style: TextStyle(color: _muted)),
                 const SizedBox(height: 20),
                 const _FeatureRow(Icons.wallpaper, '本地图片设为桌面壁纸'),
                 const _FeatureRow(Icons.blur_on, '磨玻璃 macOS 风格界面'),
@@ -511,19 +535,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ─── Widgets ──────────────────────────────────────────────────────────
 
-  Widget _fallbackBg() => Container(
-    decoration: const BoxDecoration(
-      gradient: LinearGradient(colors: [Color(0xFF0D0D1A), Color(0xFF1A1A3E), Color(0xFF0A0A20)]),
+  Widget _fallbackBg() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+    decoration: BoxDecoration(
+      gradient: LinearGradient(colors: isDark
+          ? const [Color(0xFF0D0D1A), Color(0xFF1A1A3E), Color(0xFF0A0A20)]
+          : const [Color(0xFFF0F0F5), Color(0xFFE8E8F0), Color(0xFFFAFAFF)]),
     ),
   );
+  }
 
   Widget _sectionHeader(String title, String subtitle) {
     return Row(
       children: [
-        Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
+        Text(title, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _text)),
         if (subtitle.isNotEmpty) ...[
           const SizedBox(width: 10),
-          Text(subtitle, style: const TextStyle(fontSize: 13, color: Colors.white38)),
+          Text(subtitle, style: TextStyle(fontSize: 13, color: _subtle)),
         ],
       ],
     );
@@ -532,11 +561,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _emptyPlaceholder(String title, String subtitle, VoidCallback? onAction) {
     return Center(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.inbox_outlined, size: 48, color: Colors.white.withOpacity(0.15)),
+        Icon(Icons.inbox_outlined, size: 48, color: _faint),
         const SizedBox(height: 16),
-        Text(title, style: const TextStyle(fontSize: 16, color: Colors.white54)),
+        Text(title, style: TextStyle(fontSize: 16, color: _muted)),
         const SizedBox(height: 4),
-        Text(subtitle, style: const TextStyle(fontSize: 13, color: Colors.white30)),
+        Text(subtitle, style: TextStyle(fontSize: 13, color: _subtle)),
         if (onAction != null) ...[
           const SizedBox(height: 20),
           GlassButton(label: '📁 浏览文件...', onPressed: onAction),
@@ -546,6 +575,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _glassPanel(Widget child) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
@@ -553,9 +583,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.04),
+            color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.white.withOpacity(0.08)),
+            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08)),
           ),
           child: child,
         ),
@@ -571,8 +601,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _infoRow(String label, String value) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 3),
     child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-      Text(label, style: const TextStyle(fontSize: 12, color: Colors.white30)),
-      Text(value, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+      Text(label, style: TextStyle(fontSize: 12, color: _subtle)),
+      Text(value, style: TextStyle(fontSize: 12, color: _muted)),
     ]),
   );
 
@@ -581,7 +611,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
         children: [
-          Expanded(child: Text(title, style: const TextStyle(fontSize: 13, color: Colors.white70))),
+          Expanded(child: Text(title, style: TextStyle(fontSize: 13, color: _muted))),
           SizedBox(
             height: 28,
             child: Switch.adaptive(
@@ -603,8 +633,8 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(title, style: const TextStyle(fontSize: 13, color: Colors.white70)),
-              Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.white30)),
+              Text(title, style: TextStyle(fontSize: 13, color: _muted)),
+              Text(subtitle, style: TextStyle(fontSize: 11, color: _subtle)),
             ]),
           ),
           const Icon(Icons.chevron_right, size: 16, color: Colors.white12),
@@ -669,6 +699,12 @@ class _sidebarBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeColor = AppTheme.primary;
+    final inactiveColor = isDark ? Colors.white.withOpacity(0.45) : Colors.black.withOpacity(0.45);
+    final bgColor = isActive
+        ? (isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.08))
+        : Colors.transparent;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
       child: Material(
@@ -681,13 +717,12 @@ class _sidebarBtn extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: expanded ? 12 : 6, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              color: isActive ? Colors.white.withOpacity(0.12) : Colors.transparent,
+              color: bgColor,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(item.icon, size: 20,
-                    color: isActive ? AppTheme.primary : Colors.white.withOpacity(0.45)),
+                Icon(item.icon, size: 20, color: isActive ? activeColor : inactiveColor),
                 if (expanded) ...[
                   const SizedBox(width: 10),
                   Expanded(
@@ -695,7 +730,7 @@ class _sidebarBtn extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 13,
-                          color: isActive ? AppTheme.primary : Colors.white.withOpacity(0.45),
+                          color: isActive ? activeColor : inactiveColor,
                           fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
                         )),
                   ),
@@ -753,7 +788,7 @@ class _WallpaperTile extends StatelessWidget {
                     ),
                   ),
                   Text(entry.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 10, color: Colors.white54)),
+                      style: TextStyle(fontSize: 10, color: _muted)),
                   if (entry.exists && entry.size > 0)
                     Text(_fmtSizeCompact(entry.size), style: const TextStyle(fontSize: 9, color: Colors.white24)),
                 ],

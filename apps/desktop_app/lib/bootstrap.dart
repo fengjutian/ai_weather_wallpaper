@@ -60,7 +60,7 @@ Future<void> bootstrap() async {
 
   // --- Restore theme mode ---
   try {
-    final saved = HiveHelper.instance.get('settings', 'themeMode', defaultValue: 'dark');
-    themeModeNotifier.value = saved == 'light' ? ThemeMode.light : ThemeMode.dark;
+    final saved = HiveHelper.instance.get('settings', 'themeMode', defaultValue: 'light');
+    themeModeNotifier.value = saved == 'dark' ? ThemeMode.dark : ThemeMode.light;
   } catch (_) {}
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' show ImageFilter;
+import 'dart:ui' show ImageFilter;
 
 /// A frosted-glass style button widget.
 ///
@@ -43,8 +44,9 @@ class _GlassButtonState extends State<GlassButton> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final bgColor =
-        (widget.color ?? theme.colorScheme.secondary).withOpacity(0.25);
+    final isDark = theme.brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : Colors.black87;
+    final bgColor = (widget.color ?? theme.colorScheme.secondary).withOpacity(0.25);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
@@ -60,13 +62,13 @@ class _GlassButtonState extends State<GlassButton> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (widget.icon != null) ...[
-                    Icon(widget.icon, color: Colors.white, size: 20),
+                    Icon(widget.icon, color: textColor, size: 20),
                     const SizedBox(width: 10),
                   ],
                   Text(
                     widget.label,
                     style: theme.textTheme.labelLarge?.copyWith(
-                      color: Colors.white,
+                      color: textColor,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

@@ -28,7 +28,7 @@ class AboutScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 4),
-                Text('v1.0.0', style: TextStyle(color: Color(0xFFB0B0C0))),
+                Text('v1.0.0', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color ?? const Color(0xFF888888))),
               ],
             ),
           ),
@@ -63,7 +63,7 @@ class AboutScreen extends StatelessWidget {
           const Center(
             child: Text(
               '用心打造美好的桌面体验 ❤️',
-              style: TextStyle(color: Color(0xFFB0B0C0)),
+              style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color ?? const Color(0xFF888888)),
             ),
           ),
         ],

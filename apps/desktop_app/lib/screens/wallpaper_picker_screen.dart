@@ -111,7 +111,7 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
                     child: Text(
                       '暂无壁纸。\n点击"浏览"选择图片或视频。',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFFB0B0C0)),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color ?? const Color(0xFF888888)),
                     ),
                   )
                 : ListView.builder(

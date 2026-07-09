@@ -4,7 +4,7 @@ import 'routes.dart';
 
 /// Global notifier for dark/light mode.  Any widget can listen or toggle.
 final ValueNotifier<ThemeMode> themeModeNotifier =
-    ValueNotifier<ThemeMode>(ThemeMode.dark);
+    ValueNotifier<ThemeMode>(ThemeMode.light);
 
 /// The root widget of the AI Weather Wallpaper application.
 class AIWeatherWallpaperApp extends StatelessWidget {
