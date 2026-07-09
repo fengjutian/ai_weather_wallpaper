@@ -28,6 +28,8 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _activePath;
   AudioPlayer? _audioPlayer;
   int _sidebarIndex = 0;
+  final _urlController = TextEditingController();
+  String? _webViewUrl;
 
   static const _sidebarItems = [
     _SidebarItem(Icons.photo_library_outlined, '壁纸库'),
@@ -47,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _audioPlayer?.dispose();
+    _urlController.dispose();
     _engine.stateNotifier.removeListener(_onStateChange);
     themeModeNotifier.removeListener(_onThemeChange);
     super.dispose();
@@ -145,6 +148,55 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── Theme helpers ────────────────────────────────────────────────────
   Color get _text => Theme.of(context).brightness == Brightness.dark
       ? Colors.white : Colors.black87;
+
+  Future<void> _openWebUrl() async {
+    final url = _urlController.text.trim();
+    if (url.isEmpty) return;
+    try {
+      await _engine.start(url, type: 'web');
+      setState(() {
+        _webViewUrl = url;
+        _activePath = null;
+      });
+    } catch (e) {
+      _showError('打开网页失败: $e');
+    }
+  }
+
+  void _stopWebView() {
+    _engine.stop();
+    setState(() => _webViewUrl = null);
+  }
+
+  Widget _buildUrlInput() {
+    return GlassCard(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          const Icon(Icons.language, size: 20, color: AppTheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: TextField(
+              controller: _urlController,
+              style: TextStyle(fontSize: 13, color: _text),
+              decoration: const InputDecoration(
+                hintText: '输入网页 URL...',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 8),
+              ),
+              onSubmitted: (_) => _openWebUrl(),
+            ),
+          ),
+          const SizedBox(width: 8),
+          GlassButton(label: '打开', onPressed: _openWebUrl),
+          if (_webViewUrl != null) ...[
+            const SizedBox(width: 8),
+            GlassButton(label: '⏹ 停止', onPressed: _stopWebView, color: AppTheme.error),
+          ],
+        ],
+      ),
+    );
+  }
   Color get _muted => Theme.of(context).brightness == Brightness.dark
       ? Colors.white70 : Colors.black54;
   Color get _subtle => Theme.of(context).brightness == Brightness.dark
@@ -183,6 +235,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+
+          // ── WebView Wallpaper ──
+          if (_webViewUrl != null && WallpaperEngine.instance.webViewWidget != null)
+            Positioned.fill(
+              child: WallpaperEngine.instance.webViewWidget!,
+            ),
 
           // ── Layout: Sidebar + Content ──
           Row(
@@ -305,7 +363,10 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _sectionHeader('壁纸库', '${_wallpapers.length} 张'),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
+          // ── Web URL input ──
+          _buildUrlInput(),
+          const SizedBox(height: 8),
           Expanded(
             child: _wallpapers.isEmpty
                 ? _emptyPlaceholder('还没有壁纸', '点击左侧 + 添加', () => _browseAndAdd())

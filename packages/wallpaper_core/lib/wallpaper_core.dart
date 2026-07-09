@@ -12,4 +12,5 @@ export 'renderer/image_renderer.dart';
 export 'renderer/lottie_renderer.dart';
 export 'renderer/shader_renderer.dart';
 export 'renderer/video_renderer.dart';
+export 'renderer/webview_renderer.dart';
 export 'scene/scene_manager.dart';

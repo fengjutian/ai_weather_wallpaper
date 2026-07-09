@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 
 import '../renderer/image_renderer.dart';
 import '../renderer/video_renderer.dart';
 import '../renderer/lottie_renderer.dart';
 import '../renderer/shader_renderer.dart';
+import '../renderer/webview_renderer.dart';
 
 /// Possible states of the wallpaper engine.
 enum WallpaperState {
@@ -68,6 +70,7 @@ class WallpaperEngine {
   VideoRenderer? _videoRenderer;
   LottieRenderer? _lottieRenderer;
   ShaderRenderer? _shaderRenderer;
+  WebViewRenderer? _webViewRenderer;
 
   /// The currently active renderer, or `null` if no wallpaper is running.
   Object? _activeRenderer;
@@ -112,6 +115,7 @@ class WallpaperEngine {
     _videoRenderer = VideoRenderer();
     _lottieRenderer = LottieRenderer();
     _shaderRenderer = ShaderRenderer();
+    _webViewRenderer = WebViewRenderer();
     _setState(WallpaperState.idle);
   }
 
@@ -150,6 +154,9 @@ class WallpaperEngine {
           break;
         case 'shader':
           await _startShader(wallpaperPath);
+          break;
+        case 'web':
+          await _startWebView(wallpaperPath);
           break;
         default:
           throw ArgumentError('Unknown wallpaper type: $resolvedType');
@@ -313,10 +320,16 @@ class WallpaperEngine {
   Future<void> _startShader(String path) async {
     final renderer = _shaderRenderer!;
     final ok = await renderer.load(path);
-    if (!ok) {
-      throw Exception('Failed to load shader: $path');
-    }
+    if (!ok) throw Exception('Failed to load shader: $path');
     _activeRenderer = renderer;
+    _activeType = WallpaperType.shader;
+  }
+
+  Widget? get webViewWidget => _webViewRenderer?.buildView();
+
+  Future<void> _startWebView(String url) async {
+    await _webViewRenderer!.load(url);
+    _activeRenderer = _webViewRenderer;
     _activeType = WallpaperType.shader;
   }
 

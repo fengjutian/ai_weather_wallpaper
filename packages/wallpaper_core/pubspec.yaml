@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   lottie: ^3.0.0
+  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:
