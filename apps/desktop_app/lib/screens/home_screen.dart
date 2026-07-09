@@ -760,21 +760,29 @@ class _WallpaperTile extends StatelessWidget {
                   width: isActive ? 1.5 : 0.5,
                 ),
               ),
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(0),
               child: Column(
                 children: [
                   Expanded(
-                    child: Center(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
                       child: entry.exists
-                          ? Icon(isActive ? Icons.wallpaper : Icons.image, size: 28,
-                              color: isActive ? AppTheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.3))
-                          : const Icon(Icons.broken_image, size: 28, color: AppTheme.error),
+                          ? Image.file(File(entry.path), fit: BoxFit.cover, width: double.infinity,
+                              errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, size: 28, color: AppTheme.error))
+                          : Container(color: Colors.grey[900], child: const Center(child: Icon(Icons.broken_image, size: 28, color: AppTheme.error))),
                     ),
                   ),
-                  Text(entry.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 10, color: Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Colors.black54)),
-                  if (entry.exists && entry.size > 0)
-                    Text(_fmtSizeCompact(entry.size), style: TextStyle(fontSize: 9, color: Theme.of(context).brightness == Brightness.dark ? Colors.white24 : Colors.black26)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Column(
+                      children: [
+                        Text(entry.name, maxLines: 1, overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 10, color: Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Colors.black54)),
+                        if (entry.exists && entry.size > 0)
+                          Text(_fmtSizeCompact(entry.size), style: TextStyle(fontSize: 9, color: Theme.of(context).brightness == Brightness.dark ? Colors.white24 : Colors.black26)),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
