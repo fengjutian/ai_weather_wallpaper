@@ -25,6 +25,7 @@ dependencies:
     path: ../../packages/common_ui
   ai_engine:
     path: ../../packages/ai_engine
+  file_selector: ^1.0.0
 
 dev_dependencies:
   flutter_test:

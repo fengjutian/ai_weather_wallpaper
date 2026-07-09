@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:common_ui/common_ui.dart';
 import 'package:wallpaper_core/wallpaper_core.dart';
+import 'package:file_selector/file_selector.dart';
 
-/// Browse and select wallpapers from built-in scenes.
+/// Browse and select wallpapers from local files.
 class WallpaperPickerScreen extends StatefulWidget {
   const WallpaperPickerScreen({super.key});
 
@@ -12,37 +13,47 @@ class WallpaperPickerScreen extends StatefulWidget {
 
 class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
   final WallpaperEngine _engine = WallpaperEngine.instance;
-  String? _previewing;
+  final List<String> _history = [];
+  String? _current;
 
-  static const _scenes = <_Scene>[
-    _Scene('Clear Sky', 'assets/wallpapers/clear_sky.png', Icons.wb_sunny),
-    _Scene('Rainy Day', 'assets/wallpapers/rainy_day.png', Icons.water_drop),
-    _Scene('Snowy Peak', 'assets/wallpapers/snowy_peak.png', Icons.ac_unit),
-    _Scene('Night Stars', 'assets/wallpapers/night_stars.png',
-        Icons.nightlight_round),
-    _Scene('Forest Mist', 'assets/wallpapers/forest_mist.png', Icons.forest),
-    _Scene('Ocean Waves', 'assets/wallpapers/ocean_waves.png', Icons.waves),
-  ];
-
-  Future<void> _preview(String path) async {
+  Future<void> _browseFile() async {
     try {
-      await _engine.start(path);
-      setState(() => _previewing = path);
+      const typeGroup = XTypeGroup(
+        label: 'Images & Video',
+        extensions: [
+          'png', 'jpg', 'jpeg', 'bmp', 'webp',
+          'mp4', 'webm', 'mov', 'gif',
+        ],
+      );
+      final file = await openFile(acceptedTypeGroups: [typeGroup]);
+      if (file == null) return;
+
+      await _apply(file.path);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Preview failed: $e')),
+          SnackBar(content: Text('Error: $e')),
         );
       }
     }
   }
 
   Future<void> _apply(String path) async {
-    await _preview(path);
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Wallpaper applied!')),
-      );
+    try {
+      await _engine.start(path);
+      setState(() {
+        _current = path;
+        if (!_history.contains(path)) {
+          _history.insert(0, path);
+          if (_history.length > 20) _history.removeLast();
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e')),
+        );
+      }
     }
   }
 
@@ -56,84 +67,97 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: GridView.builder(
-        padding: const EdgeInsets.all(16),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.85,
-        ),
-        itemCount: _scenes.length,
-        itemBuilder: (context, index) {
-          final scene = _scenes[index];
-          final isActive = _previewing == scene.path;
-          return _SceneCard(
-            scene: scene,
-            isActive: isActive,
-            onPreview: () => _preview(scene.path),
-            onApply: () => _apply(scene.path),
-          );
-        },
+      body: Column(
+        children: [
+          // Browse button
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _browseFile,
+                icon: const Icon(Icons.folder_open),
+                label: const Text('Browse Local Files...'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+              ),
+            ),
+          ),
+
+          // Divider
+          if (_history.isNotEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Text('Recent',
+                      style: TextStyle(
+                          color: AppTheme.primary,
+                          fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+
+          // History list
+          Expanded(
+            child: _history.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No wallpapers yet.\nTap "Browse" to pick an image or video.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xFFB0B0C0)),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: _history.length,
+                    itemBuilder: (context, index) {
+                      final path = _history[index];
+                      final name = path.split(RegExp(r'[\\/]')).last;
+                      final isActive = path == _current;
+                      return Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          side: isActive
+                              ? const BorderSide(
+                                  color: AppTheme.primary, width: 2)
+                              : BorderSide.none,
+                        ),
+                        child: ListTile(
+                          leading: Icon(
+                            _isVideo(name) ? Icons.movie : Icons.image,
+                            color: isActive
+                                ? AppTheme.primary
+                                : Colors.grey,
+                          ),
+                          title: Text(name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis),
+                          subtitle: Text(path,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 11)),
+                          trailing: isActive
+                              ? const Icon(Icons.check_circle,
+                                  color: AppTheme.primary)
+                              : TextButton(
+                                  onPressed: () => _apply(path),
+                                  child: const Text('Set'),
+                                ),
+                          onTap: () => _apply(path),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
-}
 
-class _Scene {
-  final String name;
-  final String path;
-  final IconData icon;
-  const _Scene(this.name, this.path, this.icon);
-}
-
-class _SceneCard extends StatelessWidget {
-  final _Scene scene;
-  final bool isActive;
-  final VoidCallback onPreview;
-  final VoidCallback onApply;
-
-  const _SceneCard({
-    required this.scene,
-    required this.isActive,
-    required this.onPreview,
-    required this.onApply,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: isActive
-            ? const BorderSide(color: AppTheme.primary, width: 2)
-            : BorderSide.none,
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onPreview,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(scene.icon, size: 48, color: AppTheme.primary),
-              const SizedBox(height: 12),
-              Text(
-                scene.name,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-              const Spacer(),
-              GlassButton(
-                label: 'Apply',
-                onPressed: onApply,
-                color: AppTheme.primary,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
+  bool _isVideo(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    return ['mp4', 'webm', 'mov', 'gif', 'avi', 'mkv'].contains(ext);
   }
 }
