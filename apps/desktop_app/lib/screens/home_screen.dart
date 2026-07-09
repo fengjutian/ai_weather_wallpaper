@@ -10,7 +10,7 @@ import 'package:local_storage/local_storage.dart';
 
 import '../bootstrap.dart';
 
-/// 主页面 — 磨玻璃风格图片卡片列表 + 右侧详情面板
+/// 主页面 — macOS 风格侧边栏 + 磨玻璃内容区
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -26,36 +26,34 @@ class _HomeScreenState extends State<HomeScreen> {
   WallpaperEntry? _selected;
   String? _activePath;
   AudioPlayer? _audioPlayer;
+  int _sidebarIndex = 0;
+
+  static const _sidebarItems = [
+    _SidebarItem(Icons.photo_library_outlined, '壁纸库'),
+    _SidebarItem(Icons.favorite_border, '收藏'),
+    _SidebarItem(Icons.settings_outlined, '设置'),
+    _SidebarItem(Icons.info_outline, '关于'),
+  ];
 
   @override
   void initState() {
     super.initState();
     _loadHistory();
-    _engine.stateNotifier.addListener(_onEngineChanged);
+    _engine.stateNotifier.addListener(() { if (mounted) setState(() {}); });
   }
 
   @override
   void dispose() {
     _audioPlayer?.dispose();
-    _engine.stateNotifier.removeListener(_onEngineChanged);
+    _engine.stateNotifier.removeListener(() {});
     super.dispose();
   }
-
-  void _onEngineChanged() {
-    if (!mounted) return;
-    setState(() {});
-  }
-
-  // ─── Persistence ──────────────────────────────────────────────────────
 
   void _loadHistory() {
     final raw = _hive.get('session', 'wallpaperHistory', defaultValue: <dynamic>[]);
     if (raw is List) {
       setState(() {
-        _wallpapers = raw
-            .whereType<String>()
-            .map((p) => _buildEntry(p))
-            .toList();
+        _wallpapers = raw.whereType<String>().map(_buildEntry).toList();
         _wallpapers.removeWhere((e) => !e.exists);
       });
     }
@@ -70,25 +68,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final exists = file.existsSync();
     final stat = exists ? file.statSync() : null;
     return WallpaperEntry(
-      path: path,
-      name: path.split(RegExp(r'[\\/]')).last,
-      exists: exists,
-      size: stat?.size ?? 0,
-      modified: stat?.modified,
+      path: path, name: path.split(RegExp(r'[\\/]')).last,
+      exists: exists, size: stat?.size ?? 0, modified: stat?.modified,
     );
   }
 
-  // ─── Actions ──────────────────────────────────────────────────────────
-
   Future<void> _browseAndAdd() async {
     try {
-      const typeGroup = XTypeGroup(
-        label: '图片',
-        extensions: ['png', 'jpg', 'jpeg', 'bmp', 'webp', 'gif'],
-      );
-      final file = await openFile(acceptedTypeGroups: [typeGroup]);
+      const tg = XTypeGroup(label: '图片', extensions: ['png', 'jpg', 'jpeg', 'bmp', 'webp', 'gif']);
+      final file = await openFile(acceptedTypeGroups: [tg]);
       if (file == null) return;
-
       final entry = _buildEntry(file.path);
       setState(() {
         _wallpapers.removeWhere((e) => e.path == entry.path);
@@ -97,9 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
       });
       _saveHistory();
       await _apply(entry);
-    } catch (e) {
-      _showError('选择文件失败: $e');
-    }
+    } catch (e) { _showError('选择失败: $e'); }
   }
 
   Future<void> _apply(WallpaperEntry entry) async {
@@ -108,9 +95,15 @@ class _HomeScreenState extends State<HomeScreen> {
       await _engine.start(entry.path);
       win32.setDesktopWallpaper(entry.path);
       setState(() => _activePath = entry.path);
-    } catch (e) {
-      _showError('设置壁纸失败: $e');
-    }
+    } catch (e) { _showError('设置失败: $e'); }
+  }
+
+  void _removeEntry(WallpaperEntry entry) {
+    setState(() {
+      _wallpapers.removeWhere((e) => e.path == entry.path);
+      if (_selected?.path == entry.path) _selected = null;
+    });
+    _saveHistory();
   }
 
   void _showDeleteConfirm(WallpaperEntry entry) {
@@ -118,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('文件不存在'),
-        content: Text('"${entry.name}" 已不存在，从列表中移除？'),
+        content: Text('"${entry.name}" 已不存在，移除？'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
           TextButton(
@@ -130,27 +123,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _removeEntry(WallpaperEntry entry) {
-    setState(() {
-      _wallpapers.removeWhere((e) => e.path == entry.path);
-      if (_selected?.path == entry.path) _selected = null;
-    });
-    _saveHistory();
-  }
-
-  void _stopWallpaper() {
-    _engine.stop();
-    setState(() => _activePath = null);
-  }
+  void _stopWallpaper() { _engine.stop(); setState(() => _activePath = null); }
 
   Future<void> _toggleRain() async {
-    if (_audioPlayer != null) {
-      await _audioPlayer!.dispose();
-      _audioPlayer = null;
-    } else {
-      _audioPlayer = AudioPlayer(config: Rain.config);
-      await _audioPlayer!.play();
-    }
+    if (_audioPlayer != null) { await _audioPlayer!.dispose(); _audioPlayer = null; }
+    else { _audioPlayer = AudioPlayer(config: Rain.config); await _audioPlayer!.play(); }
     setState(() {});
   }
 
@@ -167,361 +144,508 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // ── Background image with dark overlay ──
+          // Background
           Positioned.fill(
             child: _activePath != null
-                ? Image.file(
-                    File(_activePath!),
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _buildFallbackBg(),
-                  )
-                : _buildFallbackBg(),
+                ? Image.file(File(_activePath!), fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => _fallbackBg())
+                : _fallbackBg(),
           ),
-          // Dark gradient overlay for readability
+          // Dim overlay
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withOpacity(0.45),
-                    Colors.black.withOpacity(0.55),
-                    Colors.black.withOpacity(0.7),
-                  ],
+                  colors: [Colors.black.withOpacity(0.4), Colors.black.withOpacity(0.65)],
                 ),
               ),
             ),
           ),
 
-          // ── Content ──
-          Column(
+          // ── Layout: Sidebar + Content ──
+          Row(
             children: [
-              // Glass app bar
-              GlassAppBar(
-                title: 'AI 天气壁纸',
-                actions: [
-                  GlassButton(
-                    label: _audioPlayer != null ? '🔊 雨声' : '🔇 雨声',
-                    onPressed: _toggleRain,
-                  ),
-                  const SizedBox(width: 8),
-                  GlassButton(
-                    label: '⚙',
-                    onPressed: () => Navigator.pushNamed(context, '/settings'),
-                  ),
-                ],
-              ),
+              // ── Frosted Sidebar ──
+              _buildSidebar(),
 
-              // ── Body ──
+              // ── Content Area ──
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                  child: Row(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  child: _buildContent(),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─── Sidebar ──────────────────────────────────────────────────────────
+
+  Widget _buildSidebar() {
+    return ClipRRect(
+      borderRadius: const BorderRadius.horizontal(right: Radius.circular(14)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: Container(
+          width: 72,
+          decoration: BoxDecoration(
+            color: Colors.black.withOpacity(0.25),
+            border: Border(right: BorderSide(color: Colors.white.withOpacity(0.06))),
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                // App icon
+                Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF64FFDA), Color(0xFF48B0D5)],
+                    ),
+                  ),
+                  child: const Icon(Icons.cloud, color: Colors.black87, size: 22),
+                ),
+                const SizedBox(height: 24),
+                // Nav items
+                ..._sidebarItems.asMap().entries.map((e) => _SidebarIcon(
+                  item: e.value, isActive: e.key == _sidebarIndex,
+                  onTap: () => setState(() => _sidebarIndex = e.key),
+                )),
+                const Spacer(),
+                // Bottom buttons
+                _SidebarIcon(
+                  item: const _SidebarItem(Icons.add_rounded, '添加'),
+                  onTap: _browseAndAdd,
+                ),
+                const SizedBox(height: 8),
+                _SidebarIcon(
+                  item: _SidebarItem(
+                    _audioPlayer != null ? Icons.volume_up : Icons.volume_off, '雨声',
+                  ),
+                  isActive: _audioPlayer != null,
+                  onTap: _toggleRain,
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ─── Content Pages ────────────────────────────────────────────────────
+
+  Widget _buildContent() {
+    switch (_sidebarIndex) {
+      case 0: return _buildWallpaperLibrary();
+      case 1: return _buildFavorites();
+      case 2: return _buildSettings();
+      case 3: return _buildAbout();
+      default: return _buildWallpaperLibrary();
+    }
+  }
+
+  // ── Wallpaper Library ──
+
+  Widget _buildWallpaperLibrary() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader('壁纸库', '${_wallpapers.length} 张'),
+          const SizedBox(height: 12),
+          Expanded(
+            child: _wallpapers.isEmpty
+                ? _emptyPlaceholder('还没有壁纸', '点击左侧 + 添加', () => _browseAndAdd())
+                : Row(
                     children: [
-                      // Left — glass card grid
                       Expanded(
                         flex: 3,
-                        child: _wallpapers.isEmpty
-                            ? _buildEmptyState()
-                            : _buildCardGrid(),
+                        child: GridView.builder(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3, crossAxisSpacing: 10,
+                            mainAxisSpacing: 10, childAspectRatio: 1.05,
+                          ),
+                          itemCount: _wallpapers.length,
+                          itemBuilder: (_, i) {
+                            final e = _wallpapers[i];
+                            return _WallpaperTile(
+                              entry: e,
+                              isActive: e.path == _activePath,
+                              isSelected: e.path == _selected?.path,
+                              onTap: () => setState(() => _selected = e),
+                              onApply: () => _apply(e),
+                              onDelete: () => e.exists ? _removeEntry(e) : _showDeleteConfirm(e),
+                            );
+                          },
+                        ),
                       ),
                       const SizedBox(width: 16),
-                      // Right — glass detail panel
+                      // Detail panel
                       SizedBox(
-                        width: 260,
+                        width: 280,
                         child: _selected != null
-                            ? _buildGlassDetailPanel(_selected!)
-                            : _buildEmptyDetail(),
+                            ? _buildDetailPanel(_selected!)
+                            : _glassPanel(const Center(
+                                child: Text('选择一张壁纸查看详情',
+                                    style: TextStyle(color: Colors.white30))))),
                       ),
                     ],
                   ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFallbackBg() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0D0D1A), Color(0xFF1A1A3E), Color(0xFF0A0A20)],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: GlassCard(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.wallpaper, size: 56, color: Colors.white54),
-            const SizedBox(height: 16),
-            const Text('还没有壁纸',
-                style: TextStyle(fontSize: 18, color: Colors.white70)),
-            const SizedBox(height: 8),
-            const Text('点击下方按钮添加图片',
-                style: TextStyle(color: Colors.white38)),
-            const SizedBox(height: 24),
-            GlassButton(label: '📁 浏览文件...', onPressed: _browseAndAdd),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCardGrid() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('我的壁纸 (${_wallpapers.length})',
-                  style: const TextStyle(
-                      color: Colors.white70, fontWeight: FontWeight.w600)),
-              GlassButton(label: '📁 添加', onPressed: _browseAndAdd),
-            ],
-          ),
-        ),
-        Expanded(
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
-              childAspectRatio: 1.05,
-            ),
-            itemCount: _wallpapers.length,
-            itemBuilder: (context, index) {
-              final entry = _wallpapers[index];
-              final isActive = entry.path == _activePath;
-              final isSelected = entry.path == _selected?.path;
-              return _GlassWallpaperCard(
-                entry: entry,
-                isActive: isActive,
-                isSelected: isSelected,
-                onTap: () => entry.exists
-                    ? setState(() => _selected = entry)
-                    : _showDeleteConfirm(entry),
-                onApply: entry.exists ? () => _apply(entry) : null,
-                onDelete: () => _showDeleteConfirm(entry),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildEmptyDetail() {
-    return GlassCard(
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.touch_app, size: 40, color: Colors.white30),
-            const SizedBox(height: 12),
-            Text('点击左侧卡片\n查看详情',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white.withOpacity(0.3))),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildGlassDetailPanel(WallpaperEntry entry) {
-    final isActive = entry.path == _activePath;
-    return GlassCard(
-      padding: EdgeInsets.zero,
-      child: Column(
+  Widget _buildDetailPanel(WallpaperEntry e) {
+    final active = e.path == _activePath;
+    return _glassPanel(
+      Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Image preview
+          // Preview
           ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+            borderRadius: BorderRadius.circular(16),
             child: SizedBox(
-              height: 170,
-              child: entry.exists
-                  ? Image.file(
-                      File(entry.path),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _brokenImage(),
-                    )
-                  : _brokenImage(),
+              height: 200,
+              child: e.exists
+                  ? Image.file(File(e.path), fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _brokenPreview())
+                  : _brokenPreview(),
             ),
           ),
-          // Info
-          Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: _buildDetailInfo(entry),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _brokenImage() {
-    return Container(
-      color: Colors.white.withOpacity(0.05),
-      child: const Center(
-        child: Icon(Icons.broken_image, size: 40, color: AppTheme.error),
-      ),
-    );
-  }
-
-  Widget _buildDetailInfo(WallpaperEntry entry) {
-    final isActive = entry.path == _activePath;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(entry.name,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white),
-                  maxLines: 2, overflow: TextOverflow.ellipsis),
-            ),
-            if (isActive)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
-                ),
-                child: const Text('使用中',
-                    style: TextStyle(color: AppTheme.primary, fontSize: 11)),
-              ),
+          const SizedBox(height: 16),
+          Text(e.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+          const SizedBox(height: 8),
+          _infoRow('状态', e.exists ? '✅ 存在' : '❌ 不存在'),
+          if (e.exists) ...[
+            _infoRow('大小', _fmtSize(e.size)),
+            if (e.modified != null) _infoRow('时间', _fmtDate(e.modified!)),
           ],
-        ),
-        const Divider(height: 20, color: Colors.white12),
-        _detailRow('状态', entry.exists ? '✅ 存在' : '❌ 不存在'),
-        if (entry.exists) ...[
-          _detailRow('大小', _formatSize(entry.size)),
-          if (entry.modified != null)
-            _detailRow('时间', _formatDate(entry.modified!)),
+          const SizedBox(height: 12),
+          Text(e.path, style: const TextStyle(fontSize: 10, color: Colors.white38), maxLines: 2),
+          const SizedBox(height: 20),
+          if (!e.exists)
+            GlassButton(label: '🗑 移除', onPressed: () => _showDeleteConfirm(e), color: AppTheme.error)
+          else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: active
+                      ? GlassButton(label: '⏹ 停止', onPressed: _stopWallpaper, color: AppTheme.error)
+                      : GlassButton(label: '✅ 设为壁纸', onPressed: () => _apply(e), color: AppTheme.primary),
+                ),
+                if (e.exists) ...[
+                  const SizedBox(width: 8),
+                  GlassButton(label: '🗑', onPressed: () => _removeEntry(e)),
+                ],
+              ],
+            ),
+          ],
         ],
-        const SizedBox(height: 12),
-        const Text('路径', style: TextStyle(fontSize: 11, color: Colors.white38)),
-        const SizedBox(height: 2),
-        Text(entry.path, style: const TextStyle(fontSize: 10, color: Colors.white54),
-            maxLines: 3, overflow: TextOverflow.ellipsis),
-        const SizedBox(height: 16),
-        if (!entry.exists) ...[
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppTheme.error.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+      ),
+    );
+  }
+
+  // ── Favorites ──
+
+  Widget _buildFavorites() {
+    return _emptyPlaceholder('收藏夹', '即将推出', null);
+  }
+
+  // ── Settings ──
+
+  Widget _buildSettings() {
+    bool startMin = false, autoStart = false;
+    // load once
+    startMin = _hive.get('settings', 'startMinimized', defaultValue: false);
+    autoStart = _hive.get('settings', 'autoStart', defaultValue: false);
+
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionHeader('设置', ''),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView(
+              children: [
+                _glassPanel(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SectionLabel('通用'),
+                      _macSwitch('启动时最小化到托盘', startMin,
+                          (v) { _hive.put('settings', 'startMinimized', v); setState(() => startMin = v); }),
+                      const Divider(color: Colors.white10),
+                      _macSwitch('开机自启动', autoStart,
+                          (v) { _hive.put('settings', 'autoStart', v); setState(() => autoStart = v); }),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _glassPanel(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const _SectionLabel('关于'),
+                      _macListTile(Icons.info_outline, '关于 AI 天气壁纸', '版本 1.0.0'),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            child: const Text('文件已移动或删除',
-                style: TextStyle(color: AppTheme.error, fontSize: 12)),
           ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: GlassButton(
-              label: '🗑 移除记录',
-              onPressed: () => _showDeleteConfirm(entry),
-              color: AppTheme.error,
+        ],
+      ),
+    );
+  }
+
+  // ── About ──
+
+  Widget _buildAbout() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        children: [
+          _sectionHeader('AI 天气壁纸', 'v1.0.0'),
+          const SizedBox(height: 20),
+          _glassPanel(
+            Column(
+              children: [
+                Container(
+                  width: 72, height: 72,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                    gradient: const LinearGradient(colors: [Color(0xFF64FFDA), Color(0xFF48B0D5)]),
+                  ),
+                  child: const Icon(Icons.cloud, color: Colors.black87, size: 36),
+                ),
+                const SizedBox(height: 16),
+                const Text('AI 天气壁纸', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                const SizedBox(height: 8),
+                const Text('将 Windows 桌面变成活的画布', style: TextStyle(color: Colors.white54)),
+                const SizedBox(height: 20),
+                const _FeatureRow(Icons.wallpaper, '本地图片设为桌面壁纸'),
+                const _FeatureRow(Icons.blur_on, '磨玻璃 macOS 风格界面'),
+                const _FeatureRow(Icons.audiotrack, '环境音效（雨声）'),
+                const _FeatureRow(Icons.auto_awesome, 'AI 天气生成（即将推出）'),
+              ],
             ),
           ),
-        ] else ...[
-          GlassButton(
-            label: isActive ? '⏹ 停止' : '✅ 设为壁纸',
-            onPressed: isActive ? _stopWallpaper : () => _apply(entry),
-            color: isActive ? AppTheme.error : AppTheme.primary,
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              onPressed: () => _removeEntry(entry),
-              child: const Text('从列表移除',
-                  style: TextStyle(color: Colors.white30, fontSize: 12)),
-            ),
-          ),
+          const SizedBox(height: 40),
+          const Text('用心打造美好的桌面体验 ❤️', style: TextStyle(color: Colors.white24, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  // ─── Widgets ──────────────────────────────────────────────────────────
+
+  Widget _fallbackBg() => Container(
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(colors: [Color(0xFF0D0D1A), Color(0xFF1A1A3E), Color(0xFF0A0A20)]),
+    ),
+  );
+
+  Widget _sectionHeader(String title, String subtitle) {
+    return Row(
+      children: [
+        Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: Colors.white)),
+        if (subtitle.isNotEmpty) ...[
+          const SizedBox(width: 10),
+          Text(subtitle, style: const TextStyle(fontSize: 13, color: Colors.white38)),
         ],
       ],
     );
   }
 
-  Widget _detailRow(String label, String value) {
+  Widget _emptyPlaceholder(String title, String subtitle, VoidCallback? onAction) {
+    return Center(
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        Icon(Icons.inbox_outlined, size: 48, color: Colors.white.withOpacity(0.15)),
+        const SizedBox(height: 16),
+        Text(title, style: const TextStyle(fontSize: 16, color: Colors.white54)),
+        const SizedBox(height: 4),
+        Text(subtitle, style: const TextStyle(fontSize: 13, color: Colors.white30)),
+        if (onAction != null) ...[
+          const SizedBox(height: 20),
+          GlassButton(label: '📁 浏览文件...', onPressed: onAction),
+        ],
+      ]),
+    );
+  }
+
+  Widget _glassPanel(Widget child) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.04),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.08)),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  Widget _brokenPreview() => Container(
+    color: Colors.white.withOpacity(0.03),
+    child: const Center(child: Icon(Icons.broken_image, size: 40, color: AppTheme.error)),
+  );
+
+  Widget _infoRow(String label, String value) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      Text(label, style: const TextStyle(fontSize: 12, color: Colors.white30)),
+      Text(value, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+    ]),
+  );
+
+  Widget _macSwitch(String title, bool value, ValueChanged<bool> onChanged) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.white38)),
-          Text(value, style: const TextStyle(fontSize: 11, color: Colors.white70)),
+          Expanded(child: Text(title, style: const TextStyle(fontSize: 13, color: Colors.white70))),
+          SizedBox(
+            height: 28,
+            child: Switch.adaptive(
+              value: value, onChanged: onChanged,
+              activeColor: AppTheme.primary,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  String _formatSize(int bytes) {
-    if (bytes < 1024) return '$bytes B';
-    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  Widget _macListTile(IconData icon, String title, String subtitle) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          Icon(icon, size: 22, color: Colors.white38),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(title, style: const TextStyle(fontSize: 13, color: Colors.white70)),
+              Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.white30)),
+            ]),
+          ),
+          const Icon(Icons.chevron_right, size: 16, color: Colors.white20),
+        ],
+      ),
+    );
   }
 
-  String _formatDate(DateTime dt) =>
-      '${dt.year}-${_pad(dt.month)}-${_pad(dt.day)} ${_pad(dt.hour)}:${_pad(dt.minute)}';
-
-  String _pad(int n) => n.toString().padLeft(2, '0');
+  String _fmtSize(int b) => b < 1024 ? '$b B' : b < 1048576 ? '${(b / 1024).toStringAsFixed(1)} KB' : '${(b / 1048576).toStringAsFixed(1)} MB';
+  String _fmtDate(DateTime d) => '${d.year}-${_p(d.month)}-${_p(d.day)} ${_p(d.hour)}:${_p(d.minute)}';
+  String _p(int n) => n.toString().padLeft(2, '0');
 }
 
-// ─── Models ──────────────────────────────────────────────────────────────
+// ─── Data ───────────────────────────────────────────────────────────────
 
 class WallpaperEntry {
-  final String path;
-  final String name;
+  final String path, name;
   final bool exists;
   final int size;
   final DateTime? modified;
-
-  const WallpaperEntry({
-    required this.path,
-    required this.name,
-    required this.exists,
-    required this.size,
-    this.modified,
-  });
+  const WallpaperEntry({required this.path, required this.name, required this.exists, required this.size, this.modified});
 }
 
-// ─── Glass Wallpaper Card ────────────────────────────────────────────────
+class _SidebarItem { final IconData icon; final String label; const _SidebarItem(this.icon, this.label); }
 
-class _GlassWallpaperCard extends StatelessWidget {
-  final WallpaperEntry entry;
+class _SectionLabel extends StatelessWidget {
+  final String title;
+  const _SectionLabel(this.title);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(title, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppTheme.primary, letterSpacing: 0.5)),
+  );
+}
+
+class _FeatureRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _FeatureRow(this.icon, this.text);
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(children: [
+      Icon(icon, size: 18, color: AppTheme.primary.withOpacity(0.7)),
+      const SizedBox(width: 12),
+      Expanded(child: Text(text, style: const TextStyle(fontSize: 13, color: Colors.white60))),
+    ]),
+  );
+}
+
+// ─── Sidebar Icon ───────────────────────────────────────────────────────
+
+class _SidebarIcon extends StatelessWidget {
+  final _SidebarItem item;
   final bool isActive;
-  final bool isSelected;
-  final VoidCallback? onTap;
-  final VoidCallback? onApply;
-  final VoidCallback? onDelete;
+  final VoidCallback onTap;
 
-  const _GlassWallpaperCard({
-    required this.entry,
-    required this.isActive,
-    required this.isSelected,
-    this.onTap,
-    this.onApply,
-    this.onDelete,
+  const _SidebarIcon({required this.item, this.isActive = false, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Tooltip(
+        message: item.label,
+        preferBelow: false,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              width: 44, height: 44,
+              margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                color: isActive ? Colors.white.withOpacity(0.12) : Colors.transparent,
+              ),
+              child: Icon(item.icon, size: 20,
+                  color: isActive ? AppTheme.primary : Colors.white.withOpacity(0.45)),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Wallpaper Tile ─────────────────────────────────────────────────────
+
+class _WallpaperTile extends StatelessWidget {
+  final WallpaperEntry entry;
+  final bool isActive, isSelected;
+  final VoidCallback onTap, onApply, onDelete;
+
+  const _WallpaperTile({
+    required this.entry, required this.isActive, required this.isSelected,
+    required this.onTap, required this.onApply, required this.onDelete,
   });
 
   @override
@@ -529,12 +653,9 @@ class _GlassWallpaperCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+        filter: ImageFilter.blur(sigmaX: 6, sigmaY: 6),
         child: Material(
-          color: (isActive
-                  ? AppTheme.primary.withOpacity(0.15)
-                  : Colors.white.withOpacity(0.06))
-              .withOpacity(isSelected ? 0.4 : 1),
+          color: (isActive ? AppTheme.primary : Colors.white).withOpacity(isActive ? 0.12 : 0.04),
           borderRadius: BorderRadius.circular(14),
           child: InkWell(
             borderRadius: BorderRadius.circular(14),
@@ -543,9 +664,7 @@ class _GlassWallpaperCard extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isActive
-                      ? AppTheme.primary.withOpacity(0.4)
-                      : Colors.white.withOpacity(0.08),
+                  color: isActive ? AppTheme.primary.withOpacity(0.3) : Colors.white.withOpacity(0.06),
                   width: isActive ? 1.5 : 0.5,
                 ),
               ),
@@ -555,17 +674,15 @@ class _GlassWallpaperCard extends StatelessWidget {
                   Expanded(
                     child: Center(
                       child: entry.exists
-                          ? (isActive
-                              ? const Icon(Icons.wallpaper, size: 32, color: AppTheme.primary)
-                              : const Icon(Icons.image, size: 32, color: Colors.white38))
-                          : const Icon(Icons.broken_image, size: 32, color: AppTheme.error),
+                          ? Icon(isActive ? Icons.wallpaper : Icons.image, size: 28,
+                              color: isActive ? AppTheme.primary : Colors.white30)
+                          : const Icon(Icons.broken_image, size: 28, color: AppTheme.error),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(entry.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                  Text(entry.name, maxLines: 1, overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontSize: 10, color: Colors.white54)),
+                  if (entry.exists && entry.size > 0)
+                    Text(_fmtSizeCompact(entry.size), style: const TextStyle(fontSize: 9, color: Colors.white24)),
                 ],
               ),
             ),
@@ -574,4 +691,6 @@ class _GlassWallpaperCard extends StatelessWidget {
       ),
     );
   }
+
+  static String _fmtSizeCompact(int b) => b < 1024 ? '$b B' : '${(b ~/ 1024)} KB';
 }
