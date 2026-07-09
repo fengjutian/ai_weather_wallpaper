@@ -328,7 +328,7 @@ class WallpaperEngine {
   Widget? get webViewWidget => _webViewRenderer?.buildView();
 
   Future<void> _startWebView(String url) async {
-    await _webViewRenderer!.load(url);
+    await _webViewRenderer!.loadUrl(url);
     _activeRenderer = _webViewRenderer;
     _activeType = WallpaperType.shader;
   }

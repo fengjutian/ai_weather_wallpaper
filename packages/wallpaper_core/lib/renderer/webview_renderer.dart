@@ -1,33 +1,36 @@
 import 'package:flutter/material.dart';
-import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_windows/webview_flutter_windows.dart';
 
-/// Renders a live web page as wallpaper using an embedded WebView.
+/// Renders a live web page as wallpaper using Microsoft Edge WebView2.
 ///
-/// On Windows, this uses Microsoft Edge WebView2 under the hood.
+/// The browser renders off-screen and composits into the Flutter texture.
 class WebViewRenderer {
-  WebViewController? _controller;
+  final WebviewController _controller = WebviewController();
+  bool _initialized = false;
   bool _loaded = false;
 
   bool get isLoaded => _loaded;
 
-  /// Creates and loads a WebView for [url].
-  /// Returns a [Widget] for embedding in the wallpaper layer.
-  Future<Widget> load(String url) async {
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.black)
-      ..loadRequest(Uri.parse(url));
-    _loaded = true;
-    return WebViewWidget(controller: _controller!);
+  Future<void> init() async {
+    if (_initialized) return;
+    await _controller.initialize();
+    _initialized = true;
   }
 
-  Widget? buildView() {
-    if (_controller == null) return null;
-    return WebViewWidget(controller: _controller!);
+  Future<void> loadUrl(String url) async {
+    await init();
+    await _controller.loadUrl(url);
+    _loaded = true;
+  }
+
+  Widget buildView() {
+    if (!_initialized) return const SizedBox.shrink();
+    return Webview(_controller);
   }
 
   void dispose() {
-    _controller = null;
+    _controller.dispose();
+    _initialized = false;
     _loaded = false;
   }
 }

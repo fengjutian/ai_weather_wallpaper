@@ -26,6 +26,7 @@ dependencies:
   ai_engine:
     path: ../../packages/ai_engine
   file_selector: ^1.0.0
+  webview_flutter_windows: ^1.0.0
 
 dev_dependencies:
   flutter_test:
