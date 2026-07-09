@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:webview_flutter_windows/webview_flutter_windows.dart';
 
 /// Renders a live web page as wallpaper using Microsoft Edge WebView2.
-///
-/// The browser renders off-screen and composits into the Flutter texture.
 class WebViewRenderer {
   final WebviewController _controller = WebviewController();
   bool _initialized = false;

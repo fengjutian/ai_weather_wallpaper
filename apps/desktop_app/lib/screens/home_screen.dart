@@ -154,13 +154,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (url.isEmpty) return;
     try {
       await _engine.start(url, type: 'web');
-      setState(() {
-        _webViewUrl = url;
-        _activePath = null;
-      });
-    } catch (e) {
-      _showError('打开网页失败: $e');
-    }
+      setState(() { _webViewUrl = url; _activePath = null; });
+    } catch (e) { _showError('打开失败: $e'); }
   }
 
   void _stopWebView() {
@@ -180,7 +175,7 @@ class _HomeScreenState extends State<HomeScreen> {
               controller: _urlController,
               style: TextStyle(fontSize: 13, color: _text),
               decoration: const InputDecoration(
-                hintText: '输入网页 URL...',
+                hintText: '输入网址...',
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(vertical: 8),
               ),
@@ -191,7 +186,7 @@ class _HomeScreenState extends State<HomeScreen> {
           GlassButton(label: '打开', onPressed: _openWebUrl),
           if (_webViewUrl != null) ...[
             const SizedBox(width: 8),
-            GlassButton(label: '⏹ 停止', onPressed: _stopWebView, color: AppTheme.error),
+            GlassButton(label: '停止', onPressed: _stopWebView, color: AppTheme.error),
           ],
         ],
       ),
@@ -236,11 +231,9 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // ── WebView Wallpaper ──
+          // ── WebView ──
           if (_webViewUrl != null && WallpaperEngine.instance.webViewWidget != null)
-            Positioned.fill(
-              child: WallpaperEngine.instance.webViewWidget!,
-            ),
+            Positioned.fill(child: WallpaperEngine.instance.webViewWidget!),
 
           // ── Layout: Sidebar + Content ──
           Row(
