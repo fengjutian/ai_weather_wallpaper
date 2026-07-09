@@ -12,7 +12,7 @@ class AIWeatherWallpaperApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AI Weather Wallpaper',
+      title: 'AI 天气壁纸',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.dark,
       initialRoute: AppRoutes.home,

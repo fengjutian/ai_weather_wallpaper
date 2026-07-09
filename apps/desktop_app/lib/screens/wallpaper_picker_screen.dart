@@ -3,7 +3,9 @@ import 'package:common_ui/common_ui.dart';
 import 'package:wallpaper_core/wallpaper_core.dart';
 import 'package:file_selector/file_selector.dart';
 
-/// Browse and select wallpapers from local files.
+import '../bootstrap.dart';
+
+/// 浏览本地文件并设为壁纸
 class WallpaperPickerScreen extends StatefulWidget {
   const WallpaperPickerScreen({super.key});
 
@@ -19,7 +21,7 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
   Future<void> _browseFile() async {
     try {
       const typeGroup = XTypeGroup(
-        label: 'Images & Video',
+        label: '图片和视频',
         extensions: [
           'png', 'jpg', 'jpeg', 'bmp', 'webp',
           'mp4', 'webm', 'mov', 'gif',
@@ -32,7 +34,7 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('错误: $e')),
         );
       }
     }
@@ -41,6 +43,12 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
   Future<void> _apply(String path) async {
     try {
       await _engine.start(path);
+      // Set as actual Windows desktop wallpaper
+      try {
+        win32.setDesktopWallpaper(path);
+      } catch (e) {
+        debugPrint('setDesktopWallpaper failed: $e');
+      }
       setState(() {
         _current = path;
         if (!_history.contains(path)) {
@@ -51,7 +59,7 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed: $e')),
+          SnackBar(content: Text('设置失败: $e')),
         );
       }
     }
@@ -61,7 +69,7 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Wallpaper Picker'),
+        title: const Text('壁纸选择'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -69,7 +77,6 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
       ),
       body: Column(
         children: [
-          // Browse button
           Padding(
             padding: const EdgeInsets.all(20),
             child: SizedBox(
@@ -77,7 +84,7 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
               child: ElevatedButton.icon(
                 onPressed: _browseFile,
                 icon: const Icon(Icons.folder_open),
-                label: const Text('Browse Local Files...'),
+                label: const Text('浏览本地文件...'),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
@@ -85,13 +92,12 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
             ),
           ),
 
-          // Divider
           if (_history.isNotEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  Text('Recent',
+                  Text('最近使用',
                       style: TextStyle(
                           color: AppTheme.primary,
                           fontWeight: FontWeight.bold)),
@@ -99,12 +105,11 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
               ),
             ),
 
-          // History list
           Expanded(
             child: _history.isEmpty
                 ? const Center(
                     child: Text(
-                      'No wallpapers yet.\nTap "Browse" to pick an image or video.',
+                      '暂无壁纸。\n点击"浏览"选择图片或视频。',
                       textAlign: TextAlign.center,
                       style: TextStyle(color: Color(0xFFB0B0C0)),
                     ),
@@ -143,7 +148,7 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
                                   color: AppTheme.primary)
                               : TextButton(
                                   onPressed: () => _apply(path),
-                                  child: const Text('Set'),
+                                  child: const Text('设置'),
                                 ),
                           onTap: () => _apply(path),
                         ),

@@ -11,6 +11,9 @@ import 'package:desktop_bridge/desktop_bridge.dart';
 import 'package:wallpaper_core/wallpaper_core.dart';
 import 'package:local_storage/local_storage.dart';
 
+/// Singleton FFI bindings for Win32 desktop operations.
+final Win32Bindings win32 = Win32Bindings();
+
 /// Called once during app startup, before [runApp].
 ///
 /// Returns a [Future] that completes once all pre-run initialisation
@@ -26,6 +29,14 @@ Future<void> bootstrap() async {
     debugPrint('Bootstrap: Platform error: $error\n$stack');
     return true; // handled
   };
+
+  // --- Initialise Win32 FFI ---
+  try {
+    win32.loadDynamicLibraries();
+    debugPrint('Bootstrap: Win32 FFI loaded.');
+  } catch (e) {
+    debugPrint('Bootstrap: Win32 FFI load failed — $e');
+  }
 
   // --- Initialise local storage ---
   try {

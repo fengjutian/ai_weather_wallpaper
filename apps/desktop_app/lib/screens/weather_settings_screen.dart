@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:common_ui/common_ui.dart';
 import 'package:local_storage/local_storage.dart';
 
-/// Weather provider and city configuration.
+/// 天气设置 — 城市与 API Key 配置
 class WeatherSettingsScreen extends StatefulWidget {
   const WeatherSettingsScreen({super.key});
 
@@ -17,14 +17,14 @@ class _WeatherSettingsScreenState extends State<WeatherSettingsScreen> {
   String _provider = 'openweathermap';
 
   static const _cities = [
-    'Beijing',
-    'Shanghai',
-    'Tokyo',
-    'New York',
-    'London',
-    'Paris',
-    'Sydney',
-    'Moscow',
+    '北京',
+    '上海',
+    '东京',
+    '纽约',
+    '伦敦',
+    '巴黎',
+    '悉尼',
+    '莫斯科',
   ];
 
   @override
@@ -34,7 +34,7 @@ class _WeatherSettingsScreenState extends State<WeatherSettingsScreen> {
   }
 
   void _load() {
-    final city = _hive.get('session', 'city', defaultValue: 'Beijing');
+    final city = _hive.get('session', 'city', defaultValue: '北京');
     final apiKey =
         _hive.get('settings', 'openweatherApiKey', defaultValue: '');
     final provider =
@@ -50,7 +50,7 @@ class _WeatherSettingsScreenState extends State<WeatherSettingsScreen> {
     await _hive.put('settings', 'weatherProvider', _provider);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Weather settings saved.')),
+        const SnackBar(content: Text('天气设置已保存。')),
       );
     }
   }
@@ -66,7 +66,7 @@ class _WeatherSettingsScreenState extends State<WeatherSettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Weather Settings'),
+        title: const Text('天气设置'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -75,36 +75,33 @@ class _WeatherSettingsScreenState extends State<WeatherSettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          // --- Provider ---
-          const _SectionHeader(title: 'Weather Provider'),
+          const _SectionHeader(title: '天气服务商'),
           SegmentedButton<String>(
             segments: const [
               ButtonSegment(value: 'openweathermap', label: Text('OpenWeather')),
-              ButtonSegment(value: 'qweather', label: Text('QWeather')),
+              ButtonSegment(value: 'qweather', label: Text('和风天气')),
             ],
             selected: {_provider},
             onSelectionChanged: (v) => setState(() => _provider = v.first),
           ),
           const SizedBox(height: 20),
 
-          // --- API Key ---
           const _SectionHeader(title: 'API Key'),
           TextField(
             controller: _apiKeyController,
             obscureText: true,
             decoration: const InputDecoration(
-              hintText: 'Enter your API key...',
+              hintText: '输入 API Key...',
               border: OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 20),
 
-          // --- City ---
-          const _SectionHeader(title: 'Default City'),
+          const _SectionHeader(title: '默认城市'),
           TextField(
             controller: _cityController,
             decoration: const InputDecoration(
-              hintText: 'City name...',
+              hintText: '城市名称...',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.location_city),
             ),
@@ -121,11 +118,10 @@ class _WeatherSettingsScreenState extends State<WeatherSettingsScreen> {
           ),
           const SizedBox(height: 32),
 
-          // --- Save ---
           ElevatedButton.icon(
             onPressed: _save,
             icon: const Icon(Icons.save),
-            label: const Text('Save Settings'),
+            label: const Text('保存设置'),
           ),
         ],
       ),

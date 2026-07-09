@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:common_ui/common_ui.dart';
 
-/// About screen — shows app info, credits, and tech stack.
+/// 关于页面 — 应用信息与技术栈
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
@@ -9,7 +9,7 @@ class AboutScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('About'),
+        title: const Text('关于'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -18,14 +18,13 @@ class AboutScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          // App icon + name
           const Center(
             child: Column(
               children: [
                 Icon(Icons.cloud, size: 72, color: AppTheme.primary),
                 SizedBox(height: 12),
                 Text(
-                  'AI Weather Wallpaper',
+                  'AI 天气壁纸',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
                 SizedBox(height: 4),
@@ -35,39 +34,35 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 32),
 
-          // Description
-          const _SectionHeader(title: 'About'),
+          const _SectionHeader(title: '简介'),
           const Text(
-            'AI Weather Wallpaper turns your Windows desktop into a living canvas '
-            'that responds to real weather conditions. Rain, snow, sunshine, or '
-            'starlit nights — your wallpaper adapts automatically, backed by AI '
-            'generation and rich particle effects.',
+            'AI 天气壁纸将你的 Windows 桌面变成一幅活的画布，'
+            '根据真实天气实时变化。下雨、下雪、晴朗或星空——'
+            '你的壁纸会自动适配，配合 AI 生成和丰富的粒子特效。',
             style: TextStyle(height: 1.5),
           ),
           const Divider(height: 32),
 
-          // Tech stack
-          const _SectionHeader(title: 'Powered By'),
-          _TechItem('Flutter', 'Cross-platform UI framework'),
-          _TechItem('OpenWeather / QWeather', 'Real-time weather data'),
-          _TechItem('OpenAI DALL·E / Stable Diffusion', 'AI wallpaper generation'),
-          _TechItem('Audioplayers', 'Ambient sound playback'),
-          _TechItem('Hive + SQLite', 'Local persistence'),
+          const _SectionHeader(title: '技术栈'),
+          _TechItem('Flutter', '跨平台 UI 框架'),
+          _TechItem('OpenWeather / 和风天气', '实时天气数据'),
+          _TechItem('OpenAI DALL·E / Stable Diffusion', 'AI 壁纸生成'),
+          _TechItem('Audioplayers', '环境音效播放'),
+          _TechItem('Hive + SQLite', '本地持久化存储'),
           const Divider(height: 32),
 
-          // Features
-          const _SectionHeader(title: 'Features'),
-          _FeatureItem('🌦️ Real-time weather sync'),
-          _FeatureItem('🖼️ Image / Video / Lottie / Shader wallpapers'),
-          _FeatureItem('🌧️ Rain, snow, cloud, aurora particle effects'),
-          _FeatureItem('🔊 Ambient audio (rain, ocean, forest, white noise)'),
-          _FeatureItem('🤖 AI-generated wallpaper from weather prompts'),
-          _FeatureItem('🌸 24 Chinese solar terms auto-switching'),
+          const _SectionHeader(title: '功能特性'),
+          _FeatureItem('🌦️ 实时天气同步'),
+          _FeatureItem('🖼️ 图片 / 视频 / Lottie / Shader 壁纸'),
+          _FeatureItem('🌧️ 雨、雪、云、极光粒子特效'),
+          _FeatureItem('🔊 环境音效（雨声、海浪、森林、白噪音）'),
+          _FeatureItem('🤖 AI 根据天气生成壁纸'),
+          _FeatureItem('🌸 二十四节气自动切换'),
           const Divider(height: 32),
 
           const Center(
             child: Text(
-              'Made with ❤️ for beautiful desktops.',
+              '用心打造美好的桌面体验 ❤️',
               style: TextStyle(color: Color(0xFFB0B0C0)),
             ),
           ),

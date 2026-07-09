@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:common_ui/common_ui.dart';
 import 'package:local_storage/local_storage.dart';
 
-/// General application settings.
+/// 通用设置页面
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -22,8 +22,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _load() async {
-    final startMin = _hive.get('settings', 'startMinimized',
-        defaultValue: false);
+    final startMin =
+        _hive.get('settings', 'startMinimized', defaultValue: false);
     final autoStart =
         _hive.get('settings', 'autoStart', defaultValue: false);
     setState(() {
@@ -46,7 +46,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: const Text('设置'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
@@ -55,50 +55,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          // --- General ---
-          _SectionHeader(title: 'General'),
+          _SectionHeader(title: '通用'),
           SwitchListTile(
-            title: const Text('Start minimised to tray'),
-            subtitle: const Text('Launch silently in the system tray'),
+            title: const Text('启动时最小化到托盘'),
+            subtitle: const Text('静默启动到系统托盘'),
             value: _startMinimized,
             onChanged: _saveStartMinimized,
           ),
           SwitchListTile(
-            title: const Text('Launch on startup'),
-            subtitle: const Text('Run automatically when Windows starts'),
+            title: const Text('开机自启动'),
+            subtitle: const Text('Windows 启动时自动运行'),
             value: _autoStart,
             onChanged: _saveAutoStart,
           ),
           const Divider(height: 32),
 
-          // --- Weather ---
-          _SectionHeader(title: 'Weather'),
-          ListTile(
-            leading: const Icon(Icons.cloud),
-            title: const Text('Weather Settings'),
-            subtitle: const Text('City, provider, API key'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.pushNamed(context, '/weather-settings'),
-          ),
-          const Divider(height: 32),
-
-          // --- Wallpaper ---
-          _SectionHeader(title: 'Wallpaper'),
+          _SectionHeader(title: '壁纸'),
           ListTile(
             leading: const Icon(Icons.wallpaper),
-            title: const Text('Wallpaper Picker'),
-            subtitle: const Text('Choose and preview wallpapers'),
+            title: const Text('壁纸选择'),
+            subtitle: const Text('浏览本地文件并设置壁纸'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.pushNamed(context, '/wallpaper-picker'),
           ),
           const Divider(height: 32),
 
-          // --- About ---
-          _SectionHeader(title: 'About'),
+          _SectionHeader(title: '关于'),
           ListTile(
             leading: const Icon(Icons.info_outline),
-            title: const Text('About'),
-            subtitle: const Text('Version 1.0.0'),
+            title: const Text('关于'),
+            subtitle: const Text('版本 1.0.0'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.pushNamed(context, '/about'),
           ),

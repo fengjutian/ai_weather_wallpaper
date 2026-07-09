@@ -1,10 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:common_ui/common_ui.dart';
 import 'package:wallpaper_core/wallpaper_core.dart';
 import 'package:audio_engine/audio_engine.dart';
 import 'package:file_selector/file_selector.dart';
+
+import '../bootstrap.dart'; // for win32
 
 /// The main home screen — pick a local image to set as wallpaper.
 class HomeScreen extends StatefulWidget {
@@ -54,7 +54,14 @@ class _HomeScreenState extends State<HomeScreen> {
       if (file == null) return; // user cancelled
 
       final path = file.path;
+      // Render in Flutter window
       await _engine.start(path);
+      // Set as actual Windows desktop wallpaper
+      try {
+        win32.setDesktopWallpaper(path);
+      } catch (e) {
+        debugPrint('setDesktopWallpaper failed: $e');
+      }
       setState(() => _currentWallpaper = path);
     } catch (e) {
       if (mounted) {
