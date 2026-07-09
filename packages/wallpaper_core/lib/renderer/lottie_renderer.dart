@@ -53,7 +53,7 @@ class LottieRenderer {
       final content = await file.readAsString();
       final data = json.decode(content) as Map<String, dynamic>;
       final composition =
-          await LottieComposition.fromMap(data);
+          await LottieComposition.fromJson(data);
 
       if (composition == null) {
         print('LottieRenderer: failed to parse composition from $path');

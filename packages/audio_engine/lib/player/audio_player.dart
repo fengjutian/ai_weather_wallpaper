@@ -87,7 +87,14 @@ class AudioPlayer {
   // ---------------------------------------------------------------------------
 
   /// A broadcast stream that emits every time the player state changes.
-  Stream<PlayerState> get onStateChanged => _stateNotifier.stream;
+  Stream<PlayerState> get onStateChanged {
+    // ignore: close_sinks
+    final controller = StreamController<PlayerState>.broadcast();
+    void emit() => controller.add(_stateNotifier.value);
+    _stateNotifier.addListener(emit);
+    controller.onCancel = () => _stateNotifier.removeListener(emit);
+    return controller.stream;
+  }
 
   /// A [ValueNotifier] that exposes the current [PlayerState].
   ///

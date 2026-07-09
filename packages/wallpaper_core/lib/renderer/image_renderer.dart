@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'dart:ui' show Canvas, Size, Rect, Paint;
 
 /// Renders static image wallpapers (PNG, JPG, BMP, WebP).
 ///

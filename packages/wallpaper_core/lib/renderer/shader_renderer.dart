@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
+import 'dart:ui' show Canvas, Size, Rect, Paint;
 
 /// Renders GLSL fragment-shader wallpapers.
 ///
@@ -59,21 +60,17 @@ class ShaderRenderer {
       }
 
       // Compile via FragmentProgram.
-      // Flutter 3.22+ supports FragmentProgram.fromReader() for runtime
-      // shader loading.  On older versions we fall back to the asset
-      // pipeline; if neither works load() returns false.
+      // On Flutter 3.x, FragmentProgram is typically loaded from assets.
+      // Runtime compilation is only available on certain platforms.
       try {
-        // Attempt runtime loading (Flutter 3.22+).
-        _program = await ui.FragmentProgram.fromReader(
-          ui.DartStreamReader(bytes),
+        _program = await ui.FragmentProgram.compile(
+          spirv: bytes,
         );
       } catch (_) {
-        // Runtime loading unavailable – try the asset-based API.
-        // This requires the .glsl file to be registered in pubspec.yaml
-        // under flutter: assets: and passed as the asset key, not a file path.
+        // Try asset-based loading as fallback.
         print(
-          'ShaderRenderer: runtime shader compilation not available on this '
-          'platform. Try registering the shader as a Flutter asset.',
+          'ShaderRenderer: runtime shader compilation not available. '
+          'Try registering the shader as a Flutter asset.',
         );
         return false;
       }
@@ -94,7 +91,7 @@ class ShaderRenderer {
     if (_disposed || _program == null) return;
 
     _shader?.dispose();
-    _shader = _program!.createShader();
+    _shader = _program!.fragmentShader();
 
     // Set standard uniforms that most fragment shaders expect.
     _shader!.setFloat(0, size.width); // iResolution.x  (or u_resolution.x)

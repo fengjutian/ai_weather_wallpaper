@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:common_ui/common_ui.dart';
 import 'routes.dart';
 
 /// The root widget of the AI Weather Wallpaper application.
@@ -13,13 +14,7 @@ class AIWeatherWallpaperApp extends StatelessWidget {
     return MaterialApp(
       title: 'AI Weather Wallpaper',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.indigo,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.dark,
       initialRoute: AppRoutes.home,
       routes: AppRoutes.routes,
     );

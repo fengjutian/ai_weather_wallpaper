@@ -25,6 +25,8 @@
 /// ```
 library audio_engine;
 
+import 'player/audio_player.dart' show AudioPlayer, AudioTrackConfig, PlayerState;
+
 export 'player/audio_player.dart'
     show AudioPlayer, AudioTrackConfig, PlayerState;
 export 'mixer/audio_mixer.dart' show AudioMixer;
