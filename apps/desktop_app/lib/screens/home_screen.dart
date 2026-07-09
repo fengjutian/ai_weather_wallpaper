@@ -28,10 +28,11 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _activePath;
   AudioPlayer? _audioPlayer;
   int _sidebarIndex = 0;
+  bool _sidebarHovered = false;
 
   static const _sidebarItems = [
     _SidebarItem(Icons.photo_library_outlined, '壁纸库'),
-    _SidebarItem(Icons.favorite_border, '收藏'),
+    _SidebarItem(Icons.favorite_border, '收藏夹'),
     _SidebarItem(Icons.settings_outlined, '设置'),
     _SidebarItem(Icons.info_outline, '关于'),
   ];
@@ -187,53 +188,88 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── Sidebar ──────────────────────────────────────────────────────────
 
   Widget _buildSidebar() {
-    return ClipRRect(
-      borderRadius: const BorderRadius.horizontal(right: Radius.circular(14)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-        child: Container(
-          width: 72,
-          decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.25),
-            border: Border(right: BorderSide(color: Colors.white.withOpacity(0.06))),
-          ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                const SizedBox(height: 12),
-                // App icon
-                Container(
-                  width: 40, height: 40,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF64FFDA), Color(0xFF48B0D5)],
+    final expanded = _sidebarHovered;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _sidebarHovered = true),
+      onExit: (_) => setState(() => _sidebarHovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeOut,
+        width: expanded ? 180 : 72,
+        child: ClipRRect(
+          borderRadius: const BorderRadius.horizontal(right: Radius.circular(14)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.25),
+                border: Border(right: BorderSide(color: Colors.white.withOpacity(0.06))),
+              ),
+              child: SafeArea(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    // App icon
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: expanded ? 16 : 14),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40, height: 40,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF64FFDA), Color(0xFF48B0D5)],
+                              ),
+                            ),
+                            child: const Icon(Icons.cloud, color: Colors.black87, size: 22),
+                          ),
+                          if (expanded) ...[
+                            const SizedBox(width: 12),
+                            const Text('AI 天气壁纸',
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.white)),
+                          ],
+                        ],
+                      ),
                     ),
-                  ),
-                  child: const Icon(Icons.cloud, color: Colors.black87, size: 22),
+                    const SizedBox(height: 24),
+                    // Separator
+                    if (expanded)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Divider(color: Colors.white.withOpacity(0.08), height: 1),
+                      ),
+                    const SizedBox(height: 8),
+                    // Nav items
+                    ..._sidebarItems.asMap().entries.map((e) => _sidebarBtn(
+                      item: e.value, isActive: e.key == _sidebarIndex, expanded: expanded,
+                      onTap: () => setState(() => _sidebarIndex = e.key),
+                    )),
+                    const Spacer(),
+                    // Separator
+                    if (expanded)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Divider(color: Colors.white.withOpacity(0.08), height: 1),
+                      ),
+                    const SizedBox(height: 4),
+                    // Bottom buttons
+                    _sidebarBtn(
+                      item: const _SidebarItem(Icons.add_rounded, '添加壁纸'), expanded: expanded,
+                      onTap: _browseAndAdd,
+                    ),
+                    const SizedBox(height: 2),
+                    _sidebarBtn(
+                      item: _SidebarItem(
+                        _audioPlayer != null ? Icons.volume_up : Icons.volume_off, '雨声音效',
+                      ),
+                      isActive: _audioPlayer != null, expanded: expanded,
+                      onTap: _toggleRain,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                // Nav items
-                ..._sidebarItems.asMap().entries.map((e) => _SidebarIcon(
-                  item: e.value, isActive: e.key == _sidebarIndex,
-                  onTap: () => setState(() => _sidebarIndex = e.key),
-                )),
-                const Spacer(),
-                // Bottom buttons
-                _SidebarIcon(
-                  item: const _SidebarItem(Icons.add_rounded, '添加'),
-                  onTap: _browseAndAdd,
-                ),
-                const SizedBox(height: 8),
-                _SidebarIcon(
-                  item: _SidebarItem(
-                    _audioPlayer != null ? Icons.volume_up : Icons.volume_off, '雨声',
-                  ),
-                  isActive: _audioPlayer != null,
-                  onTap: _toggleRain,
-                ),
-                const SizedBox(height: 16),
-              ],
+              ),
             ),
           ),
         ),
@@ -387,10 +423,22 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       const _SectionLabel('通用'),
                       _macSwitch('启动时最小化到托盘', startMin,
-                          (v) { _hive.put('settings', 'startMinimized', v); setState(() => startMin = v); }),
+                          (v) {
+                            _hive.put('settings', 'startMinimized', v);
+                            setState(() => startMin = v);
+                            if (v) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('下次启动时将自动最小化到托盘')));
+                            }
+                          }),
                       const Divider(color: Colors.white10),
                       _macSwitch('开机自启动', autoStart,
-                          (v) { _hive.put('settings', 'autoStart', v); setState(() => autoStart = v); }),
+                          (v) {
+                            _hive.put('settings', 'autoStart', v);
+                            setState(() => autoStart = v);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(v ? '已开启开机自启动（重启后生效）' : '已关闭开机自启动')));
+                          }),
                       const Divider(color: Colors.white10),
                       _macSwitch('浅色模式',
                           themeModeNotifier.value == ThemeMode.light,
@@ -407,7 +455,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const _SectionLabel('关于'),
-                      _macListTile(Icons.info_outline, '关于 AI 天气壁纸', '版本 1.0.0'),
+                      InkWell(
+                        onTap: () => setState(() => _sidebarIndex = 3),
+                        child: _macListTile(Icons.info_outline, '关于 AI 天气壁纸', '版本 1.0.0'),
+                      ),
                     ],
                   ),
                 ),
@@ -606,36 +657,50 @@ class _FeatureRow extends StatelessWidget {
   );
 }
 
-// ─── Sidebar Icon ───────────────────────────────────────────────────────
+// ─── Sidebar Button ────────────────────────────────────────────────────
 
-class _SidebarIcon extends StatelessWidget {
+class _sidebarBtn extends StatelessWidget {
   final _SidebarItem item;
   final bool isActive;
+  final bool expanded;
   final VoidCallback onTap;
 
-  const _SidebarIcon({required this.item, this.isActive = false, required this.onTap});
+  const _sidebarBtn({required this.item, this.isActive = false, this.expanded = false, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Tooltip(
-        message: item.label,
-        preferBelow: false,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              width: 44, height: 44,
-              margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: isActive ? Colors.white.withOpacity(0.12) : Colors.transparent,
-              ),
-              child: Icon(item.icon, size: 20,
-                  color: isActive ? AppTheme.primary : Colors.white.withOpacity(0.45)),
+      padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(10),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: EdgeInsets.symmetric(horizontal: expanded ? 12 : 6, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: isActive ? Colors.white.withOpacity(0.12) : Colors.transparent,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(item.icon, size: 20,
+                    color: isActive ? AppTheme.primary : Colors.white.withOpacity(0.45)),
+                if (expanded) ...[
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(item.label,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isActive ? AppTheme.primary : Colors.white.withOpacity(0.45),
+                          fontWeight: isActive ? FontWeight.w600 : FontWeight.normal,
+                        )),
+                  ),
+                ],
+              ],
             ),
           ),
         ),
