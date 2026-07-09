@@ -28,7 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String? _activePath;
   AudioPlayer? _audioPlayer;
   int _sidebarIndex = 0;
-  bool _sidebarHovered = true;
 
   static const _sidebarItems = [
     _SidebarItem(Icons.photo_library_outlined, '壁纸库'),
@@ -208,86 +207,71 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─── Sidebar ──────────────────────────────────────────────────────────
 
   Widget _buildSidebar() {
-    final expanded = _sidebarHovered;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? Colors.black.withOpacity(0.25) : Colors.white.withOpacity(0.8);
     final borderColor = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.08);
-    return MouseRegion(
-      onEnter: (_) => setState(() => _sidebarHovered = true),
-      onExit: (_) => setState(() => _sidebarHovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOut,
-        width: expanded ? 180 : 72,
-        child: ClipRRect(
-          borderRadius: const BorderRadius.horizontal(right: Radius.circular(14)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: bgColor,
-                border: Border(right: BorderSide(color: borderColor)),
-              ),
-              child: SafeArea(
-                child: Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    // App icon
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: expanded ? 16 : 14),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 40, height: 40,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF64FFDA), Color(0xFF48B0D5)],
-                              ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.horizontal(right: Radius.circular(14)),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+        child: SizedBox(
+          width: 180,
+          child: Container(
+            decoration: BoxDecoration(
+              color: bgColor,
+              border: Border(right: BorderSide(color: borderColor)),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 40, height: 40,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFE60012), Color(0xFFC8102E)],
                             ),
-                            child: const Icon(Icons.cloud, color: Colors.black87, size: 22),
                           ),
-                          if (expanded) ...[
-                            const SizedBox(width: 12),
-                            Text('AI 天气壁纸',
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
-                                    color: isDark ? Colors.white : Colors.black87)),
-                          ],
-                        ],
-                      ),
+                          child: const Icon(Icons.cloud, color: AppTheme.primary, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Text('AI 天气壁纸',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : Colors.black87)),
+                      ],
                     ),
-                    const SizedBox(height: 24),
-                    // Separator
-                    if (expanded)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Divider(color: (isDark ? Colors.white : Colors.black).withOpacity(0.08), height: 1),
-                      ),
-                    const SizedBox(height: 8),
-                    // Nav items
-                    ..._sidebarItems.asMap().entries.map((e) => _sidebarBtn(
-                      item: e.value, isActive: e.key == _sidebarIndex, expanded: expanded,
-                      onTap: () => setState(() => _sidebarIndex = e.key),
-                    )),
-                    const Spacer(),
-                    // Separator
-                    if (expanded)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Divider(color: (isDark ? Colors.white : Colors.black).withOpacity(0.08), height: 1),
-                      ),
-                    const SizedBox(height: 4),
-                    // Bottom buttons
-                    _sidebarBtn(
-                      item: const _SidebarItem(Icons.add_rounded, '添加壁纸'), expanded: expanded,
-                      onTap: _browseAndAdd,
+                  ),
+                  const SizedBox(height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Divider(color: (isDark ? Colors.white : Colors.black).withOpacity(0.08), height: 1),
+                  ),
+                  const SizedBox(height: 8),
+                  ..._sidebarItems.asMap().entries.map((e) => _sidebarBtn(
+                    item: e.value, isActive: e.key == _sidebarIndex, expanded: true,
+                    onTap: () => setState(() => _sidebarIndex = e.key),
+                  )),
+                  const Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Divider(color: (isDark ? Colors.white : Colors.black).withOpacity(0.08), height: 1),
+                  ),
+                  const SizedBox(height: 4),
+                  _sidebarBtn(
+                    item: const _SidebarItem(Icons.add_rounded, '添加壁纸'), expanded: true,
+                    onTap: _browseAndAdd,
+                  ),
+                  const SizedBox(height: 2),
+                  _sidebarBtn(
+                    item: _SidebarItem(
+                      _audioPlayer != null ? Icons.volume_up : Icons.volume_off, '雨声音效',
                     ),
-                    const SizedBox(height: 2),
-                    _sidebarBtn(
-                      item: _SidebarItem(
-                        _audioPlayer != null ? Icons.volume_up : Icons.volume_off, '雨声音效',
-                      ),
-                      isActive: _audioPlayer != null, expanded: expanded,
+                    isActive: _audioPlayer != null, expanded: true,
                       onTap: _toggleRain,
                     ),
                     const SizedBox(height: 12),
@@ -393,7 +377,7 @@ class _HomeScreenState extends State<HomeScreen> {
             if (e.modified != null) _infoRow('时间', _fmtDate(e.modified!)),
           ],
           const SizedBox(height: 12),
-          Text(e.path, style: const TextStyle(fontSize: 10, color: Colors.white38), maxLines: 2),
+          Text(e.path, style: TextStyle(fontSize: 10, color: _subtle), maxLines: 2),
           const SizedBox(height: 20),
           if (!e.exists)
             GlassButton(label: '🗑 移除', onPressed: () => _showDeleteConfirm(e), color: AppTheme.error)
@@ -510,9 +494,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   width: 72, height: 72,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(20),
-                    gradient: const LinearGradient(colors: [Color(0xFF64FFDA), Color(0xFF48B0D5)]),
+                    gradient: const LinearGradient(colors: [Color(0xFFE60012), Color(0xFFC8102E)]),
                   ),
-                  child: const Icon(Icons.cloud, color: Colors.black87, size: 36),
+                  child: const Icon(Icons.cloud, color: AppTheme.primary, size: 36),
                 ),
                 const SizedBox(height: 16),
                 const Text('AI 天气壁纸', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
@@ -541,7 +525,7 @@ class _HomeScreenState extends State<HomeScreen> {
     decoration: BoxDecoration(
       gradient: LinearGradient(colors: isDark
           ? const [Color(0xFF0D0D1A), Color(0xFF1A1A3E), Color(0xFF0A0A20)]
-          : const [Color(0xFFF5F0EB), Color(0xFFEDE4DA), Color(0xFFF0E8DD)]),
+          : const [Color(0xFFF2F2F7), Color(0xFFF2F2F7), Color(0xFFF2F2F7)]),
     ),
   );
   }
@@ -583,9 +567,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.04) : Colors.white.withOpacity(0.5),
+            color: isDark ? Colors.white.withOpacity(0.04) : Colors.white.withOpacity(0.7),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.25)),
+            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06)),
           ),
           child: child,
         ),
@@ -629,7 +613,7 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Icon(icon, size: 22, color: Colors.white38),
+          Icon(icon, size: 22, color: _subtle),
           const SizedBox(width: 12),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -637,7 +621,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(subtitle, style: TextStyle(fontSize: 11, color: _subtle)),
             ]),
           ),
-          const Icon(Icons.chevron_right, size: 16, color: Colors.white12),
+          Icon(Icons.chevron_right, size: 16, color: _faint),
         ],
       ),
     );
@@ -701,9 +685,9 @@ class _sidebarBtn extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeColor = AppTheme.primary;
-    final inactiveColor = isDark ? Colors.white.withOpacity(0.45) : Colors.black.withOpacity(0.45);
+    final inactiveColor = isDark ? Colors.white.withOpacity(0.45) : Colors.black.withOpacity(0.55);
     final bgColor = isActive
-        ? (isDark ? Colors.white.withOpacity(0.12) : Colors.black.withOpacity(0.08))
+        ? (isDark ? Colors.white.withOpacity(0.12) : AppTheme.lightPrimary.withOpacity(0.12))
         : Colors.transparent;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 8),
@@ -783,7 +767,7 @@ class _WallpaperTile extends StatelessWidget {
                     child: Center(
                       child: entry.exists
                           ? Icon(isActive ? Icons.wallpaper : Icons.image, size: 28,
-                              color: isActive ? AppTheme.primary : Colors.white30)
+                              color: isActive ? AppTheme.primary : Theme.of(context).colorScheme.onSurface.withOpacity(0.3))
                           : const Icon(Icons.broken_image, size: 28, color: AppTheme.error),
                     ),
                   ),

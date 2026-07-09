@@ -8,10 +8,10 @@ class AppTheme {
 
   // ─── Shared ───────────────────────────────────────────────────────────
 
-  static const Color primary = Color(0xFF64FFDA); // cyan accent
+  static const Color primary = Color(0xFFE60012); // 中国红
   static const Color secondary = Color(0xFFBB86FC);
   static const Color error = Color(0xFFCF6679);
-  static const Color lightPrimary = Color(0xFF007AFF); // iOS blue
+  static const Color lightPrimary = Color(0xFFC8102E); // 深红
   static const Color lightError = Color(0xFFFF3B30); // iOS red
 
   static const Color darkBg = Color(0xFF0D0D1A);

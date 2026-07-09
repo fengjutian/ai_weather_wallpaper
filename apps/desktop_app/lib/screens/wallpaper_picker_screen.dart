@@ -134,7 +134,7 @@ class _WallpaperPickerScreenState extends State<WallpaperPickerScreen> {
                             _isVideo(name) ? Icons.movie : Icons.image,
                             color: isActive
                                 ? AppTheme.primary
-                                : Colors.grey,
+                                : Theme.of(context).colorScheme.onSurface.withOpacity(0.4),
                           ),
                           title: Text(name,
                               maxLines: 1,

@@ -49,7 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0D0D1A) : const Color(0xFFF5F0EB), Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A3E) : const Color(0xFFEDE4DA), Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A20) : const Color(0xFFF0E8DD)],
+                  colors: [Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0D0D1A) : const Color(0xFFF2F2F7), Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A3E) : const Color(0xFFF2F2F7), Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A20) : const Color(0xFFF2F2F7)],
                 ),
               ),
             ),
@@ -96,11 +96,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           const _SectionTitle('壁纸'),
                           ListTile(
-                            leading: const Icon(Icons.wallpaper, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54)),
+                            leading: Icon(Icons.wallpaper, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54)),
                             title: const Text('壁纸选择', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7))),
                             subtitle: const Text('浏览本地文件并设置壁纸',
                                 style: TextStyle(color: Colors.white38, fontSize: 12)),
-                            trailing: const Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
+                            trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
                             onTap: () => Navigator.pushNamed(context, '/wallpaper-picker'),
                           ),
                         ],
@@ -112,11 +112,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         children: [
                           const _SectionTitle('关于'),
                           ListTile(
-                            leading: const Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54)),
+                            leading: Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.54)),
                             title: const Text('关于', style: TextStyle(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7))),
                             subtitle: const Text('版本 1.0.0',
                                 style: TextStyle(color: Colors.white38, fontSize: 12)),
-                            trailing: const Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
+                            trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.3)),
                             onTap: () => Navigator.pushNamed(context, '/about'),
                           ),
                         ],
