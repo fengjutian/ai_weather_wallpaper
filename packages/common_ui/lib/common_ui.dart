@@ -9,6 +9,7 @@
 library common_ui;
 
 export 'buttons/glass_button.dart';
+export 'buttons/glass_card.dart' show GlassCard, GlassAppBar;
 export 'cards/weather_card.dart';
 export 'dialogs/wallpaper_dialog.dart';
 export 'animations/scene_transition.dart';
