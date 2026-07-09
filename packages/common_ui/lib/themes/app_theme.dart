@@ -2,151 +2,85 @@ import 'package:flutter/material.dart';
 
 /// App-wide theme constants for the AI Weather Wallpaper app.
 ///
-/// Provides a consistent dark theme with frosted-glass aesthetics.
-/// Use [AppTheme.dark] as the top-level [ThemeData] for [MaterialApp].
-///
-/// ```dart
-/// MaterialApp(
-///   theme: AppTheme.dark,
-///   home: const HomeScreen(),
-/// )
-/// ```
+/// Provides dark and light themes with frosted-glass aesthetics.
 class AppTheme {
   AppTheme._();
 
-  // -------------------------------------------------------------------------
-  // Colors
-  // -------------------------------------------------------------------------
+  // ─── Shared ───────────────────────────────────────────────────────────
 
-  /// Deep midnight background.
-  static const Color background = Color(0xFF0D0D1A);
+  static const Color primary = Color(0xFF64FFDA); // cyan accent
+  static const Color secondary = Color(0xFFBB86FC);
+  static const Color error = Color(0xFFCF6679);
+  static const Color lightPrimary = Color(0xFF007AFF); // iOS blue
+  static const Color lightError = Color(0xFFFF3B30); // iOS red
 
-  /// Slightly lighter surface for cards / sheets.
-  static const Color surface = Color(0xFF1A1A2E);
+  static const Color darkBg = Color(0xFF0D0D1A);
+  static const Color darkSurface = Color(0xFF1A1A2E);
+  static const Color darkOnSurface = Color(0xFFE8E8F0);
 
-  /// Frosted-glass overlay tint.
+  static const Color lightBg = Color(0xFFF2F2F7); // iOS system background
+  static const Color lightSurface = Color(0xFFFFFFFF); // white cards
+  static const Color lightOnSurface = Color(0xFF000000);
+
   static const Color glassOverlay = Color(0x33FFFFFF);
 
-  /// Primary accent — a soft cyan/teal.
-  static const Color primary = Color(0xFF64FFDA);
+  // ─── Themes ──────────────────────────────────────────────────────────
 
-  /// Secondary accent — a muted purple.
-  static const Color secondary = Color(0xFFBB86FC);
-
-  /// Error / warning red.
-  static const Color error = Color(0xFFCF6679);
-
-  /// On-primary text colour.
-  static const Color onPrimary = Color(0xFF000000);
-
-  /// Standard high-emphasis text on dark surfaces.
-  static const Color onSurface = Color(0xFFE8E8F0);
-
-  // -------------------------------------------------------------------------
-  // ThemeData
-  // -------------------------------------------------------------------------
-
-  /// The complete dark [ThemeData] instance.
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: background,
+        scaffoldBackgroundColor: darkBg,
         colorScheme: const ColorScheme.dark(
           primary: primary,
           secondary: secondary,
-          surface: surface,
+          surface: darkSurface,
           error: error,
-          onPrimary: onPrimary,
-          onSurface: onSurface,
+          onPrimary: Color(0xFF000000),
+          onSurface: darkOnSurface,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-        ),
+            backgroundColor: Colors.transparent, elevation: 0, centerTitle: true),
         cardTheme: CardThemeData(
-          color: surface,
-          elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
+            color: darkSurface, elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
         elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: primary,
-            foregroundColor: onPrimary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
-            ),
-          ),
-        ),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: primary, foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)))),
         textTheme: const TextTheme(
-          displayLarge: TextStyle(
-            color: onSurface,
-            fontWeight: FontWeight.bold,
-          ),
-          displaySmall: TextStyle(
-            color: onSurface,
-            fontWeight: FontWeight.w300,
-          ),
-          titleMedium: TextStyle(
-            color: onSurface,
-            fontWeight: FontWeight.w600,
-          ),
-          bodyMedium: TextStyle(color: onSurface),
-          bodySmall: TextStyle(color: Color(0xFFB0B0C0)),
-        ),
+            displayLarge: TextStyle(color: darkOnSurface, fontWeight: FontWeight.bold),
+            displaySmall: TextStyle(color: darkOnSurface, fontWeight: FontWeight.w300),
+            titleMedium: TextStyle(color: darkOnSurface, fontWeight: FontWeight.w600),
+            bodyMedium: TextStyle(color: darkOnSurface),
+            bodySmall: TextStyle(color: Color(0xFFB0B0C0))),
       );
 
-  /// The complete light [ThemeData] instance — frosted-glass light variant.
   static ThemeData get light => ThemeData(
         useMaterial3: true,
         brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF0F0F5),
+        scaffoldBackgroundColor: lightBg,
         colorScheme: const ColorScheme.light(
-          primary: Color(0xFF00897B),
-          secondary: Color(0xFF7C4DFF),
-          surface: Color(0xFFFFFFFF),
-          error: Color(0xFFD32F2F),
-          onPrimary: Color(0xFFFFFFFF),
-          onSurface: Color(0xFF1A1A1A),
+          primary: lightPrimary,
+          secondary: Color(0xFF5856D6), // iOS purple
+          surface: lightSurface,
+          error: lightError,
+          onPrimary: Colors.white,
+          onSurface: lightOnSurface,
         ),
         appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          centerTitle: true,
-        ),
+            backgroundColor: Colors.transparent, elevation: 0, centerTitle: true),
         cardTheme: CardThemeData(
-          color: Colors.white.withOpacity(0.6),
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-        ),
+            color: lightSurface.withOpacity(0.7), elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
         elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF00897B),
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
-            ),
-          ),
-        ),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: lightPrimary, foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)))),
         textTheme: const TextTheme(
-          displayLarge: TextStyle(
-            color: Color(0xFF1A1A1A),
-            fontWeight: FontWeight.bold,
-          ),
-          displaySmall: TextStyle(
-            color: Color(0xFF1A1A1A),
-            fontWeight: FontWeight.w300,
-          ),
-          titleMedium: TextStyle(
-            color: Color(0xFF1A1A1A),
-            fontWeight: FontWeight.w600,
-          ),
-          bodyMedium: TextStyle(color: Color(0xFF1A1A1A)),
-          bodySmall: TextStyle(color: Color(0xFF666666)),
-        ),
+            displayLarge: TextStyle(color: lightOnSurface, fontWeight: FontWeight.bold),
+            displaySmall: TextStyle(color: lightOnSurface, fontWeight: FontWeight.w300),
+            titleMedium: TextStyle(color: lightOnSurface, fontWeight: FontWeight.w600),
+            bodyMedium: TextStyle(color: lightOnSurface),
+            bodySmall: TextStyle(color: Color(0x8E3C3C43))), // iOS secondary label
       );
 }

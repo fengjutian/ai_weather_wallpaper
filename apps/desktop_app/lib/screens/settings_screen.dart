@@ -49,7 +49,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0D0D1A) : const Color(0xFFF0F0F5), Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A3E) : const Color(0xFFE8E8F0), Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A20) : const Color(0xFFFAFAFF)],
+                  colors: [Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0D0D1A) : const Color(0xFFF5F0EB), Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1A1A3E) : const Color(0xFFEDE4DA), Theme.of(context).brightness == Brightness.dark ? const Color(0xFF0A0A20) : const Color(0xFFF0E8DD)],
                 ),
               ),
             ),

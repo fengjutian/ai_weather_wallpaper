@@ -177,8 +177,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   colors: [
-                    Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.15),
-                    Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.65 : 0.3),
+                    Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.4 : 0.08),
+                    Colors.black.withOpacity(Theme.of(context).brightness == Brightness.dark ? 0.65 : 0.18),
                   ],
                 ),
               ),
@@ -210,8 +210,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSidebar() {
     final expanded = _sidebarHovered;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? Colors.black.withOpacity(0.25) : Colors.white.withOpacity(0.3);
-    final borderColor = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06);
+    final bgColor = isDark ? Colors.black.withOpacity(0.25) : Colors.white.withOpacity(0.8);
+    final borderColor = isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.08);
     return MouseRegion(
       onEnter: (_) => setState(() => _sidebarHovered = true),
       onExit: (_) => setState(() => _sidebarHovered = false),
@@ -357,7 +357,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? _buildDetailPanel(_selected!)
                             : _glassPanel(Center(
                                 child: Text('选择一张壁纸查看详情',
-                                    style: TextStyle(color: _subtle))))),
+                                    style: TextStyle(color: _subtle)))),
                       ),
                     ],
                   ),
@@ -541,7 +541,7 @@ class _HomeScreenState extends State<HomeScreen> {
     decoration: BoxDecoration(
       gradient: LinearGradient(colors: isDark
           ? const [Color(0xFF0D0D1A), Color(0xFF1A1A3E), Color(0xFF0A0A20)]
-          : const [Color(0xFFF0F0F5), Color(0xFFE8E8F0), Color(0xFFFAFAFF)]),
+          : const [Color(0xFFF5F0EB), Color(0xFFEDE4DA), Color(0xFFF0E8DD)]),
     ),
   );
   }
@@ -583,9 +583,9 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04),
+            color: isDark ? Colors.white.withOpacity(0.04) : Colors.white.withOpacity(0.5),
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.08)),
+            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.25)),
           ),
           child: child,
         ),

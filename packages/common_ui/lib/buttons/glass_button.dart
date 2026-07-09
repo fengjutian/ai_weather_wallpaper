@@ -46,7 +46,7 @@ class _GlassButtonState extends State<GlassButton> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final textColor = isDark ? Colors.white : Colors.black87;
-    final bgColor = (widget.color ?? theme.colorScheme.secondary).withOpacity(0.25);
+    final bgColor = (widget.color ?? theme.colorScheme.secondary).withOpacity(isDark ? 0.25 : 0.18);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
