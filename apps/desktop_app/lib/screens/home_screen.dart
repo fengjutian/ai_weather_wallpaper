@@ -9,6 +9,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:local_storage/local_storage.dart';
 
 import '../bootstrap.dart';
+import '../app.dart';
 
 /// 主页面 — macOS 风格侧边栏 + 磨玻璃内容区
 class HomeScreen extends StatefulWidget {
@@ -390,6 +391,13 @@ class _HomeScreenState extends State<HomeScreen> {
                       const Divider(color: Colors.white10),
                       _macSwitch('开机自启动', autoStart,
                           (v) { _hive.put('settings', 'autoStart', v); setState(() => autoStart = v); }),
+                      const Divider(color: Colors.white10),
+                      _macSwitch('浅色模式',
+                          themeModeNotifier.value == ThemeMode.light,
+                          (v) {
+                            themeModeNotifier.value = v ? ThemeMode.light : ThemeMode.dark;
+                            _hive.put('settings', 'themeMode', v ? 'light' : 'dark');
+                          }),
                     ],
                   ),
                 ),

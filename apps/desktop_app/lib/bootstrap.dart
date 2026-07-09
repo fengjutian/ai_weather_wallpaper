@@ -6,10 +6,13 @@
 library bootstrap;
 
 import 'dart:ui';
+import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:desktop_bridge/desktop_bridge.dart';
 import 'package:wallpaper_core/wallpaper_core.dart';
 import 'package:local_storage/local_storage.dart';
+
+import 'app.dart';
 
 /// Singleton FFI bindings for Win32 desktop operations.
 final Win32Bindings win32 = Win32Bindings();
@@ -54,4 +57,10 @@ Future<void> bootstrap() async {
   } catch (e) {
     debugPrint('Bootstrap: WallpaperEngine init failed — $e');
   }
+
+  // --- Restore theme mode ---
+  try {
+    final saved = HiveHelper.instance.get('settings', 'themeMode', defaultValue: 'dark');
+    themeModeNotifier.value = saved == 'light' ? ThemeMode.light : ThemeMode.dark;
+  } catch (_) {}
 }

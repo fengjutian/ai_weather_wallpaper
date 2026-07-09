@@ -97,4 +97,56 @@ class AppTheme {
           bodySmall: TextStyle(color: Color(0xFFB0B0C0)),
         ),
       );
+
+  /// The complete light [ThemeData] instance — frosted-glass light variant.
+  static ThemeData get light => ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF0F0F5),
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF00897B),
+          secondary: Color(0xFF7C4DFF),
+          surface: Color(0xFFFFFFFF),
+          error: Color(0xFFD32F2F),
+          onPrimary: Color(0xFFFFFFFF),
+          onSurface: Color(0xFF1A1A1A),
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          centerTitle: true,
+        ),
+        cardTheme: CardThemeData(
+          color: Colors.white.withOpacity(0.6),
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF00897B),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(28),
+            ),
+          ),
+        ),
+        textTheme: const TextTheme(
+          displayLarge: TextStyle(
+            color: Color(0xFF1A1A1A),
+            fontWeight: FontWeight.bold,
+          ),
+          displaySmall: TextStyle(
+            color: Color(0xFF1A1A1A),
+            fontWeight: FontWeight.w300,
+          ),
+          titleMedium: TextStyle(
+            color: Color(0xFF1A1A1A),
+            fontWeight: FontWeight.w600,
+          ),
+          bodyMedium: TextStyle(color: Color(0xFF1A1A1A)),
+          bodySmall: TextStyle(color: Color(0xFF666666)),
+        ),
+      );
 }
