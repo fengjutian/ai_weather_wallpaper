@@ -368,7 +368,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 16),
-          Text(e.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
+          Text(e.name, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: _text)),
           const SizedBox(height: 8),
           _infoRow('状态', e.exists ? '✅ 存在' : '❌ 不存在'),
           if (e.exists) ...[
@@ -498,7 +498,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: const Icon(Icons.cloud, color: AppTheme.primary, size: 36),
                 ),
                 const SizedBox(height: 16),
-                const Text('AI 天气壁纸', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                Text('AI 天气壁纸', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _text)),
                 const SizedBox(height: 8),
                 Text('将 Windows 桌面变成活的画布', style: TextStyle(color: _muted)),
                 const SizedBox(height: 20),
@@ -510,7 +510,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 40),
-          const Text('用心打造美好的桌面体验 ❤️', style: TextStyle(color: Colors.white24, fontSize: 12)),
+          Text('用心打造美好的桌面体验 ❤️', style: TextStyle(color: _faint, fontSize: 12)),
         ],
       ),
     );
@@ -665,7 +665,7 @@ class _FeatureRow extends StatelessWidget {
     child: Row(children: [
       Icon(icon, size: 18, color: AppTheme.primary.withOpacity(0.7)),
       const SizedBox(width: 12),
-      Expanded(child: Text(text, style: const TextStyle(fontSize: 13, color: Colors.white60))),
+      Expanded(child: Text(text, style: TextStyle(fontSize: 13, color: _muted))),
     ]),
   );
 }
