@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:ui' show Canvas, Size, Rect, Paint;
 
@@ -46,31 +44,14 @@ class ShaderRenderer {
     _program = null;
 
     try {
-      final file = File(glslFilePath);
-      if (!await file.exists()) {
-        print('ShaderRenderer: file not found at $glslFilePath');
-        return false;
-      }
-
-      // Read raw shader bytes.
-      final bytes = await file.readAsBytes();
-      if (bytes.isEmpty) {
-        print('ShaderRenderer: empty shader file');
-        return false;
-      }
-
-      // Compile via FragmentProgram.
-      // On Flutter 3.x, FragmentProgram is typically loaded from assets.
-      // Runtime compilation is only available on certain platforms.
+      // Shaders are loaded from Flutter assets, not raw file paths.
+      // The [glslFilePath] parameter should be the asset key (e.g. 'shaders/wave.glsl').
       try {
-        _program = await ui.FragmentProgram.compile(
-          spirv: bytes,
-        );
+        _program = await ui.FragmentProgram.fromAsset(glslFilePath);
       } catch (_) {
-        // Try asset-based loading as fallback.
         print(
-          'ShaderRenderer: runtime shader compilation not available. '
-          'Try registering the shader as a Flutter asset.',
+          'ShaderRenderer: shader loading failed. Ensure the shader is '
+          'registered as a Flutter asset in pubspec.yaml.',
         );
         return false;
       }
@@ -91,7 +72,7 @@ class ShaderRenderer {
     if (_disposed || _program == null) return;
 
     _shader?.dispose();
-    _shader = _program!.fragmentShader();
+    _shader = _program!.shader();
 
     // Set standard uniforms that most fragment shaders expect.
     _shader!.setFloat(0, size.width); // iResolution.x  (or u_resolution.x)
