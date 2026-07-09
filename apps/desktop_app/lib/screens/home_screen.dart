@@ -665,7 +665,8 @@ class _FeatureRow extends StatelessWidget {
     child: Row(children: [
       Icon(icon, size: 18, color: AppTheme.primary.withOpacity(0.7)),
       const SizedBox(width: 12),
-      Expanded(child: Text(text, style: TextStyle(fontSize: 13, color: _muted))),
+      Expanded(child: Text(text, style: TextStyle(fontSize: 13,
+          color: Theme.of(context).brightness == Brightness.dark ? Colors.white60 : Colors.black54))),
     ]),
   );
 }
