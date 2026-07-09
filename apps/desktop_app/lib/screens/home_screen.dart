@@ -355,9 +355,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         width: 280,
                         child: _selected != null
                             ? _buildDetailPanel(_selected!)
-                            : _glassPanel(const Center(
+                            : _glassPanel(Center(
                                 child: Text('选择一张壁纸查看详情',
-                                    style: TextStyle(color: _subtle)))),
+                                    style: TextStyle(color: _subtle))))),
                       ),
                     ],
                   ),
@@ -517,7 +517,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 16),
                 const Text('AI 天气壁纸', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                 const SizedBox(height: 8),
-                const Text('将 Windows 桌面变成活的画布', style: TextStyle(color: _muted)),
+                Text('将 Windows 桌面变成活的画布', style: TextStyle(color: _muted)),
                 const SizedBox(height: 20),
                 const _FeatureRow(Icons.wallpaper, '本地图片设为桌面壁纸'),
                 const _FeatureRow(Icons.blur_on, '磨玻璃 macOS 风格界面'),
@@ -788,9 +788,9 @@ class _WallpaperTile extends StatelessWidget {
                     ),
                   ),
                   Text(entry.name, maxLines: 1, overflow: TextOverflow.ellipsis,
-                      style: TextStyle(fontSize: 10, color: _muted)),
+                      style: TextStyle(fontSize: 10, color: Theme.of(context).brightness == Brightness.dark ? Colors.white54 : Colors.black54)),
                   if (entry.exists && entry.size > 0)
-                    Text(_fmtSizeCompact(entry.size), style: const TextStyle(fontSize: 9, color: Colors.white24)),
+                    Text(_fmtSizeCompact(entry.size), style: TextStyle(fontSize: 9, color: Theme.of(context).brightness == Brightness.dark ? Colors.white24 : Colors.black26)),
                 ],
               ),
             ),
