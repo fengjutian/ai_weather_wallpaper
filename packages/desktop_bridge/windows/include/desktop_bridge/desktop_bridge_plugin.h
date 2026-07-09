@@ -30,7 +30,13 @@ class DesktopBridgePlugin : public flutter::Plugin {
 
 #include <flutter_plugin_registrar.h>
 
-void DesktopBridgePluginRegisterWithRegistrar(
+#ifdef FLUTTER_PLUGIN_IMPL
+#define FLUTTER_PLUGIN_EXPORT __declspec(dllexport)
+#else
+#define FLUTTER_PLUGIN_EXPORT __declspec(dllimport)
+#endif
+
+FLUTTER_PLUGIN_EXPORT void DesktopBridgePluginRegisterWithRegistrar(
     FlutterDesktopPluginRegistrarRef registrar);
 
 #endif  // FLUTTER_PLUGIN_DESKTOP_BRIDGE_PLUGIN_H_

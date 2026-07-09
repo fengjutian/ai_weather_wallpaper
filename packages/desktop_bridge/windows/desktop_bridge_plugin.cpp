@@ -1,8 +1,5 @@
 #include "desktop_bridge_plugin.h"
 
-// C API type for FlutterDesktopPluginRegistrarRef
-#include <flutter_plugin_registrar.h>
-
 // This must be included before many other Windows headers.
 #include <windows.h>
 
@@ -60,10 +57,3 @@ void DesktopBridgePlugin::HandleMethodCall(
 }
 
 }  // namespace desktop_bridge
-
-void DesktopBridgePluginRegisterWithRegistrar(
-    FlutterDesktopPluginRegistrarRef registrar) {
-  desktop_bridge::DesktopBridgePlugin::RegisterWithRegistrar(
-      flutter::PluginRegistrarManager::GetInstance()
-          ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
-}

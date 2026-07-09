@@ -10,3 +10,10 @@ void DesktopBridgePluginCApiRegisterWithRegistrar(
       flutter::PluginRegistrarManager::GetInstance()
           ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
 }
+
+FLUTTER_PLUGIN_EXPORT void DesktopBridgePluginRegisterWithRegistrar(
+    FlutterDesktopPluginRegistrarRef registrar) {
+  desktop_bridge::DesktopBridgePlugin::RegisterWithRegistrar(
+      flutter::PluginRegistrarManager::GetInstance()
+          ->GetRegistrar<flutter::PluginRegistrarWindows>(registrar));
+}
