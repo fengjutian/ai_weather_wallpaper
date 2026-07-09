@@ -296,7 +296,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? _buildDetailPanel(_selected!)
                             : _glassPanel(const Center(
                                 child: Text('选择一张壁纸查看详情',
-                                    style: TextStyle(color: Colors.white30))))),
+                                    style: TextStyle(color: Colors.white30)))),
                       ),
                     ],
                   ),
@@ -548,7 +548,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.white30)),
             ]),
           ),
-          const Icon(Icons.chevron_right, size: 16, color: Colors.white20),
+          const Icon(Icons.chevron_right, size: 16, color: Colors.white12),
         ],
       ),
     );
