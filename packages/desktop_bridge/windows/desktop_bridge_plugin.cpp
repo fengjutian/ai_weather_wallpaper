@@ -175,8 +175,14 @@ void DesktopBridgePlugin::HandleMethodCall(
       desktopRect.bottom = GetSystemMetrics(SM_CYSCREEN);
     }
 
-    // Place behind DefView, or at bottom if no DefView
-    HWND insertAfter = defView ? defView : HWND_BOTTOM;
+    // Place BETWEEN background and icons: get window just before DefView
+    HWND insertAfter;
+    if (defView) {
+      insertAfter = GetWindow(defView, GW_HWNDPREV);
+      if (!insertAfter) insertAfter = HWND_BOTTOM;
+    } else {
+      insertAfter = HWND_BOTTOM;
+    }
     SetWindowPos(flutter_window_, insertAfter,
                  0, 0, desktopRect.right, desktopRect.bottom,
                  SWP_NOACTIVATE | SWP_SHOWWINDOW);
