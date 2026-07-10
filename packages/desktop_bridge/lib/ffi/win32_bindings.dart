@@ -1,80 +1,108 @@
 import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
-// ---------------------------------------------------------------------------
-// Win32 FFI — user32.dll bindings
-// ---------------------------------------------------------------------------
+// ─── C function typedefs ───────────────────────────────────────────────
 
-/// `BOOL SystemParametersInfoW(UINT uiAction, UINT uiParam, PVOID pvParam, UINT fWinIni)`
-typedef SystemParametersInfoWNative = Int32 Function(
-    Uint32, Uint32, Pointer<Void>, Uint32);
-typedef SystemParametersInfoWDart = int Function(
-    int, int, Pointer<Void>, int);
+typedef _FindWindowW_C = IntPtr Function(Pointer<Utf16>, Pointer<Utf16>);
+typedef _FindWindowW_D = int Function(Pointer<Utf16>, Pointer<Utf16>);
 
-/// SystemParametersInfo actions.
-abstract class SPI {
-  /// Sets the desktop wallpaper.
-  /// pvParam = LPCWSTR path to .bmp file, fWinIni = SPIF_UPDATEINIFILE | SPIF_SENDCHANGE
-  static const int setDeskWallpaper = 0x0014;
-  static const int getDeskWallpaper = 0x0073;
-}
+typedef _FindWindowExW_C = IntPtr Function(IntPtr, IntPtr, Pointer<Utf16>, Pointer<Utf16>);
+typedef _FindWindowExW_D = int Function(int, int, Pointer<Utf16>, Pointer<Utf16>);
 
-/// SystemParametersInfo fWinIni flags.
-abstract class SPIF {
-  static const int updateIniFile = 0x01;
-  static const int sendChange = 0x02;
-  static const int sendWinIniChange = 0x02;
-}
+typedef _EnumWindows_C = Int32 Function(Pointer<NativeFunction<_EnumProcC>>, IntPtr);
+typedef _EnumWindows_D = int Function(Pointer<NativeFunction<_EnumProcC>>, int);
 
-// ---------------------------------------------------------------------------
-// Win32Bindings
-// ---------------------------------------------------------------------------
+typedef _EnumProcC = Int32 Function(IntPtr, IntPtr);
 
-/// Implements real Win32 FFI calls for desktop wallpaper operations.
+typedef _SendMsgTimeoutW_C = IntPtr Function(IntPtr, Uint32, IntPtr, IntPtr, Uint32, Uint32, Pointer<IntPtr>);
+typedef _SendMsgTimeoutW_D = int Function(int, int, int, int, int, int, Pointer<IntPtr>);
+
+typedef _SetParent_C = IntPtr Function(IntPtr, IntPtr);
+typedef _SetParent_D = int Function(int, int);
+
+typedef _SPI_C = Int32 Function(Uint32, Uint32, Pointer<Void>, Uint32);
+typedef _SPI_D = int Function(int, int, Pointer<Void>, int);
+
+typedef _GetActiveWindow_C = IntPtr Function();
+typedef _GetActiveWindow_D = int Function();
+
+// ─── Win32Bindings ──────────────────────────────────────────────────────
+
 class Win32Bindings {
-  DynamicLibrary? _user32;
-  SystemParametersInfoWDart? _systemParametersInfoW;
+  late final DynamicLibrary _lib;
+  late final _FindWindowW_D _findWindowW;
+  late final _FindWindowExW_D _findWindowExW;
+  late final _EnumWindows_D _enumWindows;
+  late final _SendMsgTimeoutW_D _sendMessageTimeout;
+  late final _SetParent_D _setParent;
+  late final _SPI_D _systemParametersInfoW;
+  late final _GetActiveWindow_D _getActiveWindow;
 
-  bool get isLoaded => _systemParametersInfoW != null;
+  int _foundWorkerW = 0;
 
-  /// Loads user32.dll and resolves all function pointers.
   void loadDynamicLibraries() {
-    _user32 = DynamicLibrary.open('user32.dll');
-    _systemParametersInfoW =
-        _user32!.lookupFunction<SystemParametersInfoWNative, SystemParametersInfoWDart>(
-            'SystemParametersInfoW');
+    _lib = DynamicLibrary.open('user32.dll');
+    _findWindowW = _lib.lookupFunction<_FindWindowW_C, _FindWindowW_D>('FindWindowW');
+    _findWindowExW = _lib.lookupFunction<_FindWindowExW_C, _FindWindowExW_D>('FindWindowExW');
+    _enumWindows = _lib.lookupFunction<_EnumWindows_C, _EnumWindows_D>('EnumWindows');
+    _sendMessageTimeout = _lib.lookupFunction<_SendMsgTimeoutW_C, _SendMsgTimeoutW_D>('SendMessageTimeoutW');
+    _setParent = _lib.lookupFunction<_SetParent_C, _SetParent_D>('SetParent');
+    _systemParametersInfoW = _lib.lookupFunction<_SPI_C, _SPI_D>('SystemParametersInfoW');
+    _getActiveWindow = _lib.lookupFunction<_GetActiveWindow_C, _GetActiveWindow_D>('GetActiveWindow');
   }
 
-  /// Sets the Windows desktop wallpaper to the image at [imagePath].
-  ///
-  /// [imagePath] must be an absolute path to a .bmp file.
-  /// On success, the desktop wallpaper is updated and the change is
-  /// persisted across reboots.
-  ///
-  /// Returns true on success.
+  /// WorkerW discovery callback — returns 0 (stop) when found.
+  int _onWindow(int hwnd) {
+    final cls = 'SHELLDLL_DefView'.toNativeUtf16();
+    final child = _findWindowExW(hwnd, 0, cls, nullptr);
+    calloc.free(cls);
+    if (child != 0) {
+      _foundWorkerW = hwnd;
+      return 0;
+    }
+    return 1;
+  }
+
+  static int _enumCallback(int hwnd, int lParam) {
+    return Win32Bindings._current!._onWindow(hwnd);
+  }
+
+  static Win32Bindings? _current;
+
+  /// Embeds the Flutter window behind desktop icons.
+  bool embedAsWallpaper() {
+    _current = this;
+    _foundWorkerW = 0;
+
+    // 1. Find Progman
+    final progman = _findWindowW('Progman'.toNativeUtf16(), nullptr);
+    if (progman == 0) return false;
+
+    // 2. Create WorkerW via 0x052C
+    final r = calloc<IntPtr>();
+    _sendMessageTimeout(progman, 0x052C, 0, 0, 0, 1000, r);
+    calloc.free(r);
+
+    // 3. Find WorkerW containing SHELLDLL_DefView
+    final cb = Pointer.fromFunction<_EnumProcC>(_enumCallback, 0);
+    _enumWindows(cb, 0);
+    _current = null;
+    if (_foundWorkerW == 0) return false;
+
+    // 4. Get Flutter window handle
+    final flutter = _getActiveWindow();
+    if (flutter == 0) return false;
+
+    // 5. Reparent Flutter window to WorkerW
+    _setParent(flutter, _foundWorkerW);
+    return true;
+  }
+
+  /// Sets the Windows desktop wallpaper to [imagePath].
   bool setDesktopWallpaper(String imagePath) {
-    if (_systemParametersInfoW == null) {
-      throw StateError(
-          'Win32Bindings not loaded. Call loadDynamicLibraries() first.');
-    }
-
-    final pathPtr = imagePath.toNativeUtf16();
-    try {
-      final result = _systemParametersInfoW!(
-        SPI.setDeskWallpaper,
-        0,
-        pathPtr.cast<Void>(),
-        SPIF.updateIniFile | SPIF.sendChange,
-      );
-      return result != 0;
-    } finally {
-      calloc.free(pathPtr);
-    }
-  }
-
-  /// Disposes loaded library handles.
-  void dispose() {
-    _systemParametersInfoW = null;
-    _user32 = null;
+    final p = imagePath.toNativeUtf16();
+    final r = _systemParametersInfoW(0x0014, 0, p.cast<Void>(), 0x01 | 0x02);
+    calloc.free(p);
+    return r != 0;
   }
 }

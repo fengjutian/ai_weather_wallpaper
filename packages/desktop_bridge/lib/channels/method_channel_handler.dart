@@ -177,3 +177,30 @@ class MethodChannelHandler {
     }
   }
 }
+
+/// Singleton native bridge for desktop operations.
+class DesktopBridgeNative {
+  static const _channel = MethodChannel('desktop_bridge');
+
+  /// Embeds the Flutter window behind desktop icons via native C++ WorkerW logic.
+  static Future<bool> embedAsWallpaper() async {
+    try {
+      await _channel.invokeMethod('embedAsWallpaper');
+      return true;
+    } catch (e) {
+      print('[DesktopBridge] embedAsWallpaper failed: $e');
+      return false;
+    }
+  }
+
+  /// Restores the Flutter window from behind desktop icons back to normal.
+  static Future<bool> restoreFromWallpaper() async {
+    try {
+      await _channel.invokeMethod('restoreWindow');
+      return true;
+    } catch (e) {
+      print('[DesktopBridge] restoreFromWallpaper failed: $e');
+      return false;
+    }
+  }
+}

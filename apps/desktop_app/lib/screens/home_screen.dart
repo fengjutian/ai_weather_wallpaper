@@ -10,6 +10,7 @@ import 'package:local_storage/local_storage.dart';
 
 import '../bootstrap.dart';
 import '../app.dart';
+import 'package:desktop_bridge/desktop_bridge.dart';
 
 /// 主页面 — macOS 风格侧边栏 + 磨玻璃内容区
 class HomeScreen extends StatefulWidget {
@@ -145,20 +146,42 @@ class _HomeScreenState extends State<HomeScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  void _embedToDesktop() async {
+    final ok = await DesktopBridgeNative.embedAsWallpaper();
+    _showError(ok ? '已嵌入桌面！' : '嵌入失败');
+  }
+
   // ─── Theme helpers ────────────────────────────────────────────────────
   Color get _text => Theme.of(context).brightness == Brightness.dark
       ? Colors.white : Colors.black87;
 
   Future<void> _openWebUrl() async {
-    final url = _urlController.text.trim();
+    var url = _urlController.text.trim();
     if (url.isEmpty) return;
+    print('[DesktopBridge] _openWebUrl called with: $url');
+
+    // Auto-prepend https:// if no scheme
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = 'https://$url';
+    }
+
     try {
+      print('[DesktopBridge] calling _engine.start...');
       await _engine.start(url, type: 'web');
+      print('[DesktopBridge] _engine.start completed');
       setState(() { _webViewUrl = url; _activePath = null; });
+
+      // Delay embed to let WebView2 fully render its child HWND
+      await Future.delayed(const Duration(milliseconds: 2000));
+      print('[DesktopBridge] calling embedAsWallpaper...');
+      final ok = await DesktopBridgeNative.embedAsWallpaper();
+      print('[DesktopBridge] embedAsWallpaper returned: $ok');
+      if (!ok && mounted) _showError('嵌入桌面失败，但网页已加载');
     } catch (e) { _showError('打开失败: $e'); }
   }
 
   void _stopWebView() {
+    DesktopBridgeNative.restoreFromWallpaper();
     _engine.stop();
     setState(() => _webViewUrl = null);
   }
@@ -231,12 +254,17 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // ── WebView ──
-          if (_webViewUrl != null && WallpaperEngine.instance.webViewWidget != null)
+          // ── WebView Mode: fullscreen, hide UI ──
+          if (_webViewUrl != null && WallpaperEngine.instance.webViewWidget != null) ...[
             Positioned.fill(child: WallpaperEngine.instance.webViewWidget!),
-
-          // ── Layout: Sidebar + Content ──
-          Row(
+            // Floating close button
+            Positioned(
+              top: 16, right: 16,
+              child: GlassButton(label: '✕ 退出', onPressed: _stopWebView, color: AppTheme.error),
+            ),
+          ] else ...[
+            // ── Layout: Sidebar + Content ──
+            Row(
             children: [
               // ── Frosted Sidebar ──
               _buildSidebar(),
@@ -250,6 +278,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+          ], // close else list
         ],
       ),
     );
@@ -325,7 +354,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     isActive: _audioPlayer != null, expanded: true,
                       onTap: _toggleRain,
                     ),
-                    const SizedBox(height: 12),
+                  const SizedBox(height: 2),
+                  _sidebarBtn(
+                    item: const _SidebarItem(Icons.desktop_windows, '嵌入桌面'),
+                    onTap: _embedToDesktop,
+                  ),
+                  const SizedBox(height: 12),
                   ],
                 ),
               ),

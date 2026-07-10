@@ -39,6 +39,9 @@ enum WallpaperType {
 
   /// GLSL fragment shader (.glsl).
   shader,
+
+  /// Web page (URL).
+  web,
 }
 
 /// Manages the lifecycle of wallpapers.
@@ -101,7 +104,8 @@ class WallpaperEngine {
   /// Whether the engine has been initialised.
   bool get isInitialised =>
       _imageRenderer != null || _videoRenderer != null ||
-      _lottieRenderer != null || _shaderRenderer != null;
+      _lottieRenderer != null || _shaderRenderer != null ||
+      _webViewRenderer != null;
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -191,6 +195,9 @@ class WallpaperEngine {
         case WallpaperType.shader:
           (_activeRenderer as ShaderRenderer).dispose();
           break;
+        case WallpaperType.web:
+          _webViewRenderer?.dispose();
+          break;
         case null:
           break;
       }
@@ -201,6 +208,7 @@ class WallpaperEngine {
     _videoRenderer = VideoRenderer();
     _lottieRenderer = LottieRenderer();
     _shaderRenderer = ShaderRenderer();
+    _webViewRenderer = WebViewRenderer();
 
     _activeRenderer = null;
     _activeType = null;
@@ -263,6 +271,9 @@ class WallpaperEngine {
         case WallpaperType.shader:
           (_activeRenderer as ShaderRenderer).dispose();
           break;
+        case WallpaperType.web:
+          _webViewRenderer?.dispose();
+          break;
         case null:
           break;
       }
@@ -272,11 +283,13 @@ class WallpaperEngine {
     _videoRenderer?.dispose();
     _lottieRenderer?.dispose();
     _shaderRenderer?.dispose();
+    _webViewRenderer?.dispose();
 
     _imageRenderer = null;
     _videoRenderer = null;
     _lottieRenderer = null;
     _shaderRenderer = null;
+    _webViewRenderer = null;
     _activeRenderer = null;
     _activeType = null;
 
@@ -330,7 +343,7 @@ class WallpaperEngine {
   Future<void> _startWebView(String url) async {
     await _webViewRenderer!.loadUrl(url);
     _activeRenderer = _webViewRenderer;
-    _activeType = WallpaperType.shader;
+    _activeType = WallpaperType.web;
   }
 
   // ---------------------------------------------------------------------------

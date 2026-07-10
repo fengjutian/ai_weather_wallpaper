@@ -15,5 +15,5 @@
 /// ```
 library desktop_bridge;
 
-export 'channels/method_channel_handler.dart' show MethodChannelHandler, ChannelNames;
+export 'channels/method_channel_handler.dart' show MethodChannelHandler, ChannelNames, DesktopBridgeNative;
 export 'ffi/win32_bindings.dart' show Win32Bindings;
