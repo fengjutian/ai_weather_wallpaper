@@ -158,7 +158,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _openWebUrl() async {
     var url = _urlController.text.trim();
     if (url.isEmpty) return;
-    print('[DesktopBridge] _openWebUrl called with: $url');
 
     // Auto-prepend https:// if no scheme
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -166,17 +165,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     try {
-      print('[DesktopBridge] calling _engine.start...');
       await _engine.start(url, type: 'web');
-      print('[DesktopBridge] _engine.start completed');
       setState(() { _webViewUrl = url; _activePath = null; });
 
-      // Delay embed to let WebView2 fully render its child HWND
-      await Future.delayed(const Duration(milliseconds: 2000));
-      print('[DesktopBridge] calling embedAsWallpaper...');
+      // Let WebView2 initialize, then embed
+      await Future.delayed(const Duration(milliseconds: 500));
       final ok = await DesktopBridgeNative.embedAsWallpaper();
-      print('[DesktopBridge] embedAsWallpaper returned: $ok');
-      if (!ok && mounted) _showError('嵌入桌面失败，但网页已加载');
+      if (!ok) print('[DesktopBridge] embedAsWallpaper failed');
     } catch (e) { _showError('打开失败: $e'); }
   }
 

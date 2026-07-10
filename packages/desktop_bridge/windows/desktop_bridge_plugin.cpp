@@ -12,102 +12,69 @@
 
 namespace desktop_bridge {
 
-// --- WorkerW embedding helpers ---
-
 static void LogWindowInfo(const wchar_t* label, HWND hwnd) {
   wchar_t className[256] = {0};
-  wchar_t title[256] = {0};
   GetClassNameW(hwnd, className, 256);
-  GetWindowTextW(hwnd, title, 256);
   RECT r;
   GetWindowRect(hwnd, &r);
   wchar_t buf[512];
-  swprintf_s(buf, L"[desktop_bridge] %s: HWND=0x%p class='%s' title='%s' rect=(%d,%d,%d,%d)\n",
-             label, hwnd, className, title, r.left, r.top, r.right, r.bottom);
+  swprintf_s(buf, L"[desktop_bridge] %s: HWND=0x%p class='%s' rect=(%d,%d,%d,%d)\n",
+             label, hwnd, className, r.left, r.top, r.right, r.bottom);
   OutputDebugStringW(buf);
 }
 
+// Find WorkerW by looking for SHELLDLL_DefView first,
+// then getting its parent (the real WorkerW).
+// This is the approach used by Wallpaper Engine & Lively Wallpaper.
 HWND FindWorkerW() {
   HWND progman = FindWindowW(L"Progman", nullptr);
   if (!progman) {
-    LOG("FindWorkerW: Progman not found!");
+    LOG("FindWorkerW: Progman not found");
     return nullptr;
   }
   LogWindowInfo(L"Progman", progman);
 
-  // Count WorkerW windows before sending 0x052C
-  int countBefore = 0;
-  EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
-    int* cnt = reinterpret_cast<int*>(lParam);
-    wchar_t cn[256];
-    if (GetClassNameW(hwnd, cn, 256) && wcscmp(cn, L"WorkerW") == 0) (*cnt)++;
-    return TRUE;
-  }, reinterpret_cast<LPARAM>(&countBefore));
-
-  wchar_t buf[128];
-  swprintf_s(buf, L"[desktop_bridge] WorkerW count before 0x052C: %d\n", countBefore);
-  OutputDebugStringW(buf);
-
-  // Send 0x052C to spawn WorkerW
-  DWORD_PTR msgResult = 0;
-  LRESULT sent = SendMessageTimeoutW(progman, 0x052C, 0, 0, SMTO_NORMAL, 100, &msgResult);
-  swprintf_s(buf, L"[desktop_bridge] SendMessageTimeoutW(0x052C) returned %d, result=%d\n",
-             (int)sent, (int)msgResult);
-  OutputDebugStringW(buf);
-
-  // Count WorkerW windows after sending
-  int countAfter = 0;
-  EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
-    int* cnt = reinterpret_cast<int*>(lParam);
-    wchar_t cn[256];
-    if (GetClassNameW(hwnd, cn, 256) && wcscmp(cn, L"WorkerW") == 0) (*cnt)++;
-    return TRUE;
-  }, reinterpret_cast<LPARAM>(&countAfter));
-  swprintf_s(buf, L"[desktop_bridge] WorkerW count after 0x052C: %d\n", countAfter);
-  OutputDebugStringW(buf);
+  // Spawn WorkerW via undocumented message
+  SendMessageTimeoutW(progman, 0x052C, 0, 0, SMTO_NORMAL, 1000, nullptr);
 
   HWND workerW = nullptr;
 
-  // Strategy 1: WorkerW with SHELLDLL_DefView child
-  EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
-    HWND* out = reinterpret_cast<HWND*>(lParam);
-    wchar_t className[256];
-    if (GetClassNameW(hwnd, className, 256) == 0) return TRUE;
-    if (wcscmp(className, L"WorkerW") != 0) return TRUE;
-    HWND defView = FindWindowExW(hwnd, nullptr, L"SHELLDLL_DefView", nullptr);
-    if (defView) {
-      LogWindowInfo(L"Found WorkerW+DefView", hwnd);
-      *out = hwnd;
-      return FALSE;
+  // Find SHELLDLL_DefView, then get its parent WorkerW
+  HWND defView = FindWindowExW(nullptr, nullptr, L"SHELLDLL_DefView", nullptr);
+  while (defView) {
+    HWND parent = GetParent(defView);
+    if (parent) {
+      wchar_t cn[256];
+      GetClassNameW(parent, cn, 256);
+      if (wcscmp(cn, L"WorkerW") == 0) {
+        LogWindowInfo(L"WorkerW (parent of DefView)", parent);
+        LogWindowInfo(L"SHELLDLL_DefView", defView);
+        workerW = parent;
+        break;
+      }
     }
-    return TRUE;
-  }, reinterpret_cast<LPARAM>(&workerW));
-
-  if (workerW) {
-    LOG("FindWorkerW: strategy 1 succeeded (WorkerW+DefView)");
-    return workerW;
+    defView = FindWindowExW(nullptr, defView, L"SHELLDLL_DefView", nullptr);
   }
 
-  LOG("FindWorkerW: strategy 1 failed, trying strategy 2 (any WorkerW)");
-
-  // Strategy 2: Any WorkerW (even without DefView)
-  EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
-    HWND* out = reinterpret_cast<HWND*>(lParam);
-    wchar_t className[256];
-    if (GetClassNameW(hwnd, className, 256) == 0) return TRUE;
-    if (wcscmp(className, L"WorkerW") == 0) {
-      LogWindowInfo(L"Found WorkerW (no DefView)", hwnd);
-      *out = hwnd;
-      return FALSE;
-    }
-    return TRUE;
-  }, reinterpret_cast<LPARAM>(&workerW));
-
   if (workerW) {
-    LOG("FindWorkerW: strategy 2 succeeded (any WorkerW)");
+    LOG("FindWorkerW: SUCCESS (found via DefView parent)");
   } else {
-    LOG("FindWorkerW: ALL STRATEGIES FAILED!");
+    LOG("FindWorkerW: FAILED -- no WorkerW parent of DefView");
+
+    // Fallback: enumerate to find any WorkerW
+    EnumWindows([](HWND hwnd, LPARAM lParam) -> BOOL {
+      HWND* out = reinterpret_cast<HWND*>(lParam);
+      wchar_t className[256];
+      if (GetClassNameW(hwnd, className, 256) == 0) return TRUE;
+      if (wcscmp(className, L"WorkerW") == 0) {
+        LogWindowInfo(L"WorkerW (fallback enum)", hwnd);
+        *out = hwnd;
+        return FALSE;
+      }
+      return TRUE;
+    }, reinterpret_cast<LPARAM>(&workerW));
   }
+
   return workerW;
 }
 
@@ -148,6 +115,7 @@ void DesktopBridgePlugin::HandleMethodCall(
 
   if (method_call.method_name() == "embedAsWallpaper") {
     LOG("embedAsWallpaper called");
+
     HWND workerW = FindWorkerW();
     if (!workerW) {
       LOG("embedAsWallpaper FAILED: WorkerW not found");
@@ -160,39 +128,28 @@ void DesktopBridgePlugin::HandleMethodCall(
       return;
     }
 
-    LogWindowInfo(L"WorkerW", workerW);
-    HWND defView = FindWindowExW(workerW, nullptr, L"SHELLDLL_DefView", nullptr);
-    if (defView) LogWindowInfo(L"SHELLDLL_DefView", defView);
-
-    // Strategy: SetParent WITHOUT changing GWL_STYLE
-    // (WS_CHILD would break WebView2 rendering)
+    // Core: SetParent + WS_CHILD (as Wallpaper Engine / Lively do)
     SetParent(flutter_window_, workerW);
-
-    RECT desktopRect;
-    if (!GetClientRect(workerW, &desktopRect)) {
-      desktopRect.left = 0; desktopRect.top = 0;
-      desktopRect.right = GetSystemMetrics(SM_CXSCREEN);
-      desktopRect.bottom = GetSystemMetrics(SM_CYSCREEN);
+    {
+      LONG_PTR style = GetWindowLongPtrW(flutter_window_, GWL_STYLE);
+      style &= ~WS_OVERLAPPEDWINDOW;
+      style |= WS_CHILD | WS_VISIBLE;
+      SetWindowLongPtrW(flutter_window_, GWL_STYLE, style);
     }
 
-    // Place BETWEEN background and icons: get window just before DefView
-    HWND insertAfter;
-    if (defView) {
-      insertAfter = GetWindow(defView, GW_HWNDPREV);
-      if (!insertAfter) insertAfter = HWND_BOTTOM;
-    } else {
-      insertAfter = HWND_BOTTOM;
+    // Fill the WorkerW client area
+    RECT rect;
+    GetClientRect(workerW, &rect);
+    SetWindowPos(flutter_window_, nullptr,
+                 0, 0, rect.right, rect.bottom,
+                 SWP_SHOWWINDOW);
+
+    {
+      wchar_t buf[128];
+      swprintf_s(buf, L"[desktop_bridge] embedAsWallpaper SUCCESS (%dx%d)\n",
+                 rect.right, rect.bottom);
+      OutputDebugStringW(buf);
     }
-    SetWindowPos(flutter_window_, insertAfter,
-                 0, 0, desktopRect.right, desktopRect.bottom,
-                 SWP_NOACTIVATE | SWP_SHOWWINDOW);
-
-    wchar_t buf[128];
-    swprintf_s(buf, L"[desktop_bridge] Parented to WorkerW, pos: %dx%d\n",
-               desktopRect.right, desktopRect.bottom);
-    OutputDebugStringW(buf);
-
-    LOG("embedAsWallpaper SUCCESS");
     result->Success(flutter::EncodableValue(true));
     return;
   }
@@ -204,13 +161,21 @@ void DesktopBridgePlugin::HandleMethodCall(
       result->Error("NO_WINDOW", "Flutter window not available");
       return;
     }
+
     SetParent(flutter_window_, nullptr);
+
+    LONG_PTR style = GetWindowLongPtrW(flutter_window_, GWL_STYLE);
+    style &= ~WS_CHILD;
+    style |= WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+    SetWindowLongPtrW(flutter_window_, GWL_STYLE, style);
+
     SetWindowPos(flutter_window_, HWND_TOPMOST,
                  0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN),
-                 SWP_NOACTIVATE | SWP_SHOWWINDOW);
+                 SWP_SHOWWINDOW);
     SetWindowPos(flutter_window_, HWND_NOTOPMOST,
                  0, 0, 0, 0,
                  SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
     LOG("restoreWindow SUCCESS");
     result->Success(flutter::EncodableValue(true));
     return;
